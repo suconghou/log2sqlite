@@ -9,9 +9,6 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    istream *in;
-    ifstream ifn;
-
     if (argc < 2)
     {
         return process(cin);
