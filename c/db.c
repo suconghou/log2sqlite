@@ -65,29 +65,29 @@ int db_insert(long time, char *remote_addr, char *remote_user, char *request, in
 {
     int res = sqlite3_bind_int(stmt_log, 1, time);
     CHECK(res);
-    res = sqlite3_bind_text(stmt_log, 2, remote_addr, strlen(remote_addr), NULL);
+    res = sqlite3_bind_text(stmt_log, 2, remote_addr, -1, SQLITE_STATIC);
     CHECK(res);
-    res = sqlite3_bind_text(stmt_log, 3, remote_user, strlen(remote_user), NULL);
+    res = sqlite3_bind_text(stmt_log, 3, remote_user, -1, SQLITE_STATIC);
     CHECK(res);
-    res = sqlite3_bind_text(stmt_log, 4, request, strlen(request), NULL);
+    res = sqlite3_bind_text(stmt_log, 4, request, -1, SQLITE_STATIC);
     CHECK(res);
     res = sqlite3_bind_int(stmt_log, 5, status);
     CHECK(res);
     res = sqlite3_bind_int(stmt_log, 6, body_bytes_sent);
     CHECK(res);
-    res = sqlite3_bind_text(stmt_log, 7, http_referer, strlen(http_referer), NULL);
+    res = sqlite3_bind_text(stmt_log, 7, http_referer, -1, SQLITE_STATIC);
     CHECK(res);
-    res = sqlite3_bind_text(stmt_log, 8, http_user_agent, strlen(http_user_agent), NULL);
+    res = sqlite3_bind_text(stmt_log, 8, http_user_agent, -1, SQLITE_STATIC);
     CHECK(res);
-    res = sqlite3_bind_text(stmt_log, 9, http_x_forwarded_for, strlen(http_x_forwarded_for), NULL);
+    res = sqlite3_bind_text(stmt_log, 9, http_x_forwarded_for, -1, SQLITE_STATIC);
     CHECK(res);
-    res = sqlite3_bind_text(stmt_log, 10, host, strlen(host), NULL);
+    res = sqlite3_bind_text(stmt_log, 10, host, -1, SQLITE_STATIC);
     CHECK(res);
     res = sqlite3_bind_int(stmt_log, 11, request_length);
     CHECK(res);
     res = sqlite3_bind_int(stmt_log, 12, bytes_sent);
     CHECK(res);
-    res = sqlite3_bind_text(stmt_log, 13, upstream_addr, strlen(upstream_addr), NULL);
+    res = sqlite3_bind_text(stmt_log, 13, upstream_addr, -1, SQLITE_STATIC);
     CHECK(res);
     res = sqlite3_bind_int(stmt_log, 14, upstream_status);
     CHECK(res);
@@ -103,8 +103,6 @@ int db_insert(long time, char *remote_addr, char *remote_user, char *request, in
     {
         return 101;
     }
-    res = sqlite3_clear_bindings(stmt_log);
-    CHECK(res);
     return sqlite3_reset(stmt_log);
 }
 

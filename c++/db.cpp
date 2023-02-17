@@ -74,25 +74,24 @@ public:
     int insert_log(long time, string &remote_addr, string &remote_user, string &request, int status, int body_bytes_sent, string &http_referer, string &http_user_agent, string &http_x_forwarded_for, string &host, int request_length, int bytes_sent, string &upstream_addr, int upstream_status, double request_time, double upstream_response_time, double upstream_connect_time, double upstream_header_time)
     {
         CHECKZERO(sqlite3_bind_int(stmt_log, 1, time));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 2, remote_addr.c_str(), remote_addr.length(), NULL));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 3, remote_user.c_str(), remote_user.length(), NULL));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 4, request.c_str(), request.length(), NULL));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 2, remote_addr.c_str(), -1, SQLITE_STATIC));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 3, remote_user.c_str(), -1, SQLITE_STATIC));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 4, request.c_str(), -1, SQLITE_STATIC));
         CHECKZERO(sqlite3_bind_int(stmt_log, 5, status));
         CHECKZERO(sqlite3_bind_int(stmt_log, 6, body_bytes_sent));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 7, http_referer.c_str(), http_referer.length(), NULL));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 8, http_user_agent.c_str(), http_user_agent.length(), NULL));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 9, http_x_forwarded_for.c_str(), http_x_forwarded_for.length(), NULL));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 10, host.c_str(), host.length(), NULL));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 7, http_referer.c_str(), -1, SQLITE_STATIC));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 8, http_user_agent.c_str(), -1, SQLITE_STATIC));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 9, http_x_forwarded_for.c_str(), -1, SQLITE_STATIC));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 10, host.c_str(), -1, SQLITE_STATIC));
         CHECKZERO(sqlite3_bind_int(stmt_log, 11, request_length));
         CHECKZERO(sqlite3_bind_int(stmt_log, 12, bytes_sent));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 13, upstream_addr.c_str(), upstream_addr.length(), NULL));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 13, upstream_addr.c_str(), -1, SQLITE_STATIC));
         CHECKZERO(sqlite3_bind_int(stmt_log, 14, upstream_status));
         CHECKZERO(sqlite3_bind_double(stmt_log, 15, request_time));
         CHECKZERO(sqlite3_bind_double(stmt_log, 16, upstream_response_time));
         CHECKZERO(sqlite3_bind_double(stmt_log, 17, upstream_connect_time));
         CHECKZERO(sqlite3_bind_double(stmt_log, 18, upstream_header_time));
         CHECKZERO(SQLITE_DONE - sqlite3_step(stmt_log));
-        CHECKZERO(sqlite3_clear_bindings(stmt_log));
         CHECKZERO(sqlite3_reset(stmt_log)); // 重置绑定
         return 0;
     }
