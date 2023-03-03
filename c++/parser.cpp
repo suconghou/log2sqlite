@@ -41,6 +41,12 @@ int digital_dot(unsigned char x, unsigned char y, unsigned char z)
     return (x >= 48 && x <= 57) || x == 46;
 }
 
+// 包含数字字母和.号或:号（IPv4或IPv6）
+int digital_dot_colon(unsigned char x, unsigned char y, unsigned char z)
+{
+    return (x >= 48 && x <= 58) || x == 46 || (x >= 97 && x <= 122);
+}
+
 // 包含数字和.号或-号
 int digital_dot_minus(unsigned char x, unsigned char y, unsigned char z)
 {
@@ -205,7 +211,7 @@ public:
 
     int parse_remote_addr(char *item_value)
     {
-        return parse_item_trim_space(item_value, digital_dot, 0, 0);
+        return parse_item_trim_space(item_value, digital_dot_colon, 0, 0);
     }
 
     int parse_remote_user(char *item_value)

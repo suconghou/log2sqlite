@@ -82,6 +82,9 @@ proc digital(x: char, y: char, z: char): bool = x >= '\48' and x <= '\57'
 # 包含数字和.号
 proc digital_dot(x: char, y: char, z: char): bool = (x >= '\48' and x <= '\57') or x == '\46'
 
+# 包含数字字母和.号或:号（IPv4或IPv6）
+proc digital_dot_colon(x: char, y: char, z: char): bool = (x >= '\48' and x <= '\58') or x == '\46' or (x >= '\97' and x <= '\122')
+
 # 包含数字和.号或-号
 proc digital_dot_minus(x: char, y: char, z: char): bool = (x >= '\48' and x <= '\57') or x == '\46' or x == '\45'
 
@@ -107,9 +110,9 @@ proc string_end(x: char, y: char, z: char): bool = not (x == '\32' and ( (z >= '
 # 当前是空格，上一个是-或者数字
 proc digital_or_none_end(x: char, y: char, z: char): bool = not (x == '\32' and ( (z >= '\48' and z <= '\57') or z == '\45'))
 
-# 包含数字和.号
+# 包含数字字母和.号或:号（IPv4或IPv6）
 proc parse_remote_addr(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, digital_dot)
+    return this.parse_item_trimx(blank, blank, digital_dot_colon)
 
 # 去除可能存在的-,非空格
 proc parse_remote_user(this: var Line): string =
