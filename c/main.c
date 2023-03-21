@@ -303,16 +303,16 @@ int parse_upstream_header_time(const char *s, int *offset, int len, char *item_v
     return parse_item_trim_space(s, offset, len, item_value, digital_dot_minus, 0, 0);
 }
 
-static inline void byteFormat(unsigned int s, char *out)
+static inline void byteFormat(unsigned long s, char *out)
 {
     char *unit = "KMGTPEZY";
     if (s < 1024)
     {
-        sprintf(out, "%u B", s);
+        sprintf(out, "%lu B", s);
         return;
     }
     unit--;
-    float n = (float)s;
+    double n = (double)s;
     while (n >= 1024)
     {
         n /= 1024;

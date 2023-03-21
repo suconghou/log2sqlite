@@ -14,16 +14,16 @@ long unix_time(const char *timestr)
     return mktime(&t);
 }
 
-static inline void byteFormat(unsigned int s, char *out)
+static inline void byteFormat(unsigned long s, char *out)
 {
     char const *unit = "KMGTPEZY";
     if (s < 1024)
     {
-        sprintf(out, "%u B", s);
+        sprintf(out, "%lu B", s);
         return;
     }
     unit--;
-    float n = (float)s;
+    double n = (double)s;
     while (n >= 1024)
     {
         n /= 1024;
