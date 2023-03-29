@@ -120,15 +120,15 @@ int sqlite_exec_cb(void *data, int ncols, char **values, char **attribute)
 int db_query(const char *file, const char *sql)
 {
     sqlite3 *db;
-    if (sqlite3_open(file, &db))
+    if (sqlite3_open_v2(file, &db, SQLITE_OPEN_READONLY, NULL))
     {
         throw sqlite3_errmsg(db);
     }
     char *err_msg;
     if (sqlite3_exec(db, sql, sqlite_exec_cb, NULL, &err_msg) != SQLITE_OK)
     {
-        sqlite3_close(db);
+        sqlite3_close_v2(db);
         throw err_msg;
     }
-    return sqlite3_close(db);
+    return sqlite3_close_v2(db);
 }

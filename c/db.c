@@ -131,7 +131,7 @@ int sqlite_exec_cb(void *data, int ncols, char **values, char **attribute)
 
 int query(const char *file, const char *sql)
 {
-    if (sqlite3_open(file, &pDB))
+    if (sqlite3_open_v2(file, &pDB, SQLITE_OPEN_READONLY, NULL))
     {
         fprintf(stderr, "open error: %s\n", sqlite3_errmsg(pDB));
         return 1;
@@ -140,8 +140,8 @@ int query(const char *file, const char *sql)
     if (sqlite3_exec(pDB, sql, sqlite_exec_cb, NULL, &err_msg) != SQLITE_OK)
     {
         fprintf(stderr, "exec error: %s\n", err_msg);
-        sqlite3_close(pDB);
+        sqlite3_close_v2(pDB);
         return 2;
     }
-    return sqlite3_close(pDB);
+    return sqlite3_close_v2(pDB);
 }
