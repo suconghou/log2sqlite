@@ -43,17 +43,14 @@ public:
             "CREATE INDEX 'log_time' ON 'nginx_log' ('time');";
         if (sqlite3_exec(this->db, sql, NULL, NULL, &err_msg) != SQLITE_OK)
         {
-            fprintf(stderr, "sql error: %s\n", err_msg);
-            sqlite3_free(err_msg);
             sqlite3_close(this->db);
-            throw "init error";
+            throw err_msg;
         }
         sql = "INSERT INTO `nginx_log`(time,remote_addr,remote_user,request,status,body_bytes_sent,http_referer,http_user_agent,http_x_forwarded_for,host,request_length,bytes_sent,upstream_addr,upstream_status,request_time,upstream_response_time,upstream_connect_time,upstream_header_time) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
         if (sqlite3_prepare_v2(this->db, sql, strlen(sql), &stmt_log, NULL) != SQLITE_OK)
         {
-            fprintf(stderr, "prepare error: %s\n", sqlite3_errmsg(this->db));
             sqlite3_close(this->db);
-            throw "prepare sql error";
+            throw sqlite3_errmsg(this->db);
         }
     }
 
@@ -109,3 +106,29 @@ public:
         return 0;
     }
 };
+
+int sqlite_exec_cb(void *data, int ncols, char **values, char **attribute)
+{
+    for (int i = 0; i < ncols; i++)
+    {
+        (i > 0) ? printf("|%s", values[i]) : printf("%s", values[i]);
+    }
+    printf("\n");
+    return 0;
+}
+
+int db_query(const char *file, const char *sql)
+{
+    sqlite3 *db;
+    if (sqlite3_open(file, &db))
+    {
+        throw sqlite3_errmsg(db);
+    }
+    char *err_msg;
+    if (sqlite3_exec(db, sql, sqlite_exec_cb, NULL, &err_msg) != SQLITE_OK)
+    {
+        sqlite3_close(db);
+        throw err_msg;
+    }
+    return sqlite3_close(db);
+}

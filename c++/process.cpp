@@ -186,3 +186,8 @@ int process(istream &fh)
     printf("共处理%d行,发送数据%s,接收数据%s\n", total_lines, b1, b2);
     return c.end();
 }
+
+int query(const char *db, const char *sql)
+{
+    return db_query(db, sql);
+}

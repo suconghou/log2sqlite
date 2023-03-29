@@ -276,10 +276,26 @@ proc process(filename: File|string) =
     echo &"共处理{total_lines}行,发送数据{formatSize(total_bytes_sent)},接收数据{formatSize(total_bytes_recv)}\n"
 
 
-
+proc query(file: string, str: string) =
+    if not file.fileExists:
+        raise newException(DbError, "文件不存在:"&file)
+    var line = ""
+    var i = 0
+    for row in open(file, "", "", "").fastRows(str.sql):
+        i = 0
+        line.setLen(0)
+        for x in row:
+            if i > 0:
+                line.add('|')
+            line.add(x)
+            inc(i)
+        echo line
 
 try:
-    if paramCount() > 0:
+    let argc = paramCount()
+    if argc > 1:
+        query(paramStr(1), paramStr(2))
+    elif argc > 0:
         process(paramStr(1))
     else:
         process(stdin)

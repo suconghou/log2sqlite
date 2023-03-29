@@ -330,9 +330,11 @@ long unix_time(const char *timestr)
 
 int main(int argc, char *argv[])
 {
+    if (argc > 2)
+    {
+        return query(argv[1], argv[2]);
+    }
     FILE *input;
-
-    // FILE *input = fopen("/tmp/1", "r");
     if (argc < 2)
     {
         input = stdin;

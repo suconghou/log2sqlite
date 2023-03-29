@@ -118,3 +118,30 @@ int db_end()
     }
     return 0;
 }
+
+int sqlite_exec_cb(void *data, int ncols, char **values, char **attribute)
+{
+    for (int i = 0; i < ncols; i++)
+    {
+        (i > 0) ? printf("|%s", values[i]) : printf("%s", values[i]);
+    }
+    printf("\n");
+    return 0;
+}
+
+int query(const char *file, const char *sql)
+{
+    if (sqlite3_open(file, &pDB))
+    {
+        fprintf(stderr, "open error: %s\n", sqlite3_errmsg(pDB));
+        return 1;
+    }
+    char *err_msg;
+    if (sqlite3_exec(pDB, sql, sqlite_exec_cb, NULL, &err_msg) != SQLITE_OK)
+    {
+        fprintf(stderr, "exec error: %s\n", err_msg);
+        sqlite3_close(pDB);
+        return 2;
+    }
+    return sqlite3_close(pDB);
+}
