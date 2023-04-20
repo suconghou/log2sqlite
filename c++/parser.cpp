@@ -134,8 +134,8 @@ private:
             }
             if (gotvalue < 0)
             {
-                unsigned char y = i < len ? str[i] : 0;
-                unsigned char z = i >= 2 ? str[i - 2] : 0;
+                const unsigned char y = i < len ? str[i] : 0;
+                const unsigned char z = i >= 2 ? str[i - 2] : 0;
                 if (cond(x, y, z))
                 {
                     found_end = i - 1;
@@ -168,7 +168,7 @@ private:
                         }
                     }
                 }
-                int v_len = found_end - found_start + 1;
+                const int v_len = found_end - found_start + 1;
                 strncpy(item_value, str + found_start, v_len);
                 item_value[v_len] = '\0';
                 gotvalue = 1;

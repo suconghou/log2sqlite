@@ -124,8 +124,8 @@ int parse_item_trim_space(const char *s, int *offset, int len, char *item_value,
         }
         if (gotvalue < 0)
         {
-            unsigned char y = i < len ? s[i] : 0;
-            unsigned char z = i >= 2 ? s[i - 2] : 0;
+            const unsigned char y = i < len ? s[i] : 0;
+            const unsigned char z = i >= 2 ? s[i - 2] : 0;
             if (cond(x, y, z))
             {
                 found_end = i - 1;
@@ -158,7 +158,7 @@ int parse_item_trim_space(const char *s, int *offset, int len, char *item_value,
                     }
                 }
             }
-            int v_len = found_end - found_start + 1;
+            const int v_len = found_end - found_start + 1;
             strncpy(item_value, s + found_start, v_len);
             item_value[v_len] = '\0';
             gotvalue = 1;
