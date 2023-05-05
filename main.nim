@@ -59,7 +59,8 @@ proc parse_item_trimx(this: var Line, left: set[char], right: set[char], cond: p
                 # 如果最后一个字符符合，则found=len-1,此时剩余应为空
                 # 如果最后一个字符不符合，判断是否是后置字符，如果是则也为空
                 if found_end == strlen-1 or x in right:
-                    this.index = strlen-1
+                    # 字符串已完全遍历
+                    this.index = strlen
                 else:
                     this.index = found_end+1
         else:
@@ -70,7 +71,7 @@ proc parse_item_trimx(this: var Line, left: set[char], right: set[char], cond: p
                 elif i == strlen:
                     i+=1
             this.index = i-1
-            break
+            return item_value
     # 防止前置字符去除时，直接continue完所有
     if item_value.len < 1:
         raise newException(ValueError, "匹配失败:"&this.str)
