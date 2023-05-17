@@ -16,7 +16,7 @@ parse nginx access log into sqlite database
 
 依赖 sqlite3 , alpine 内静态编译可 `apk add sqlite-dev sqlite-static`
 
-以下三个版本均在`nimlang/nim:alpine`中编译
+以下三个版本均在`nimlang/nim:latest-alpine-slim`中编译
 
 ## nim 版本
 
