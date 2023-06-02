@@ -12,66 +12,71 @@ const quotation = {'"'}
 const square_left = {' ', '['}
 const square_right = {' ', ']'}
 
+# 类似内置substr的更快实现
+func substr(s: string, first: int, last: int): string =
+    let l = last-first+1
+    if l < 1:
+        return ""
+    result = newString(l)
+    copyMem(result[0].addr, cast[cstring](cast[uint](s.cstring)+first.uint), l)
+
 # 根据条件解析，并去除前置后置x字符
 proc parse_item_trimx(this: var Line, left: set[char], right: set[char], cond: proc, strip_left: set[char] = {}): string =
-    let strlen = this.str.len;
     var i = this.index;
+    while i < this.str.len:
+        if this.str[i] in left:
+            i+=1
+        else:
+            break
+    this.index = i
     var item_value: string;
-    var pad = true;
     var found_start = -1;
     var found_end = -1;
-    while i < strlen:
+    while i < this.str.len:
         let x = this.str[i]
         i+=1; # i已指向下一个字符
-        if x in left and pad:
-            # 去前置连续x
-            this.index = i;
-            continue
-        else:
-            pad = false
-        if item_value.len < 1:
-            let y = if i < strlen: this.str[i] else: '\x00'
-            let z = if i >= 2: this.str[i-2] else: '\x00'
-            # 符合预定格式,x为当前字符,y为下个字符,y可能为0,z为上一个字符
-            if cond(x, y, z):
-                found_end = i-1
-                if found_start < 0:
-                    found_start = found_end
-                # 如果未到行末尾,才能continue,否则i=len了,不能continue,会造成下次退出循环,item_value未赋值
-                if i < strlen:
-                    continue
-            # 否则匹配到边界或者完全没有匹配到
+        let y = if i < this.str.len: this.str[i] else: '\x00'
+        let z = if i >= 2: this.str[i-2] else: '\x00'
+        # 符合预定格式,x为当前字符,y为下个字符,y可能为0,z为上一个字符
+        if cond(x, y, z):
+            found_end = i-1
             if found_start < 0:
-                # 完全没有匹配到
-                raise newException(ValueError, "匹配失败:"&this.str)
-            # 包含cond成立时当前字符x,如果结果字符串以某字符开始，我们配置了strip_left开头
-            # 例如解析request_line,开头有引号,我们仅在生成结果时过滤
-            if strip_left.len > 0:
-                while found_start < found_end:
-                    if this.str[found_start] in strip_left:
-                        found_start+=1
-                    else:
-                        break;
-            item_value = this.str.substr(found_start, found_end)
-            # 执行到此处，已匹配到了想要的字符串，要么匹配到字符串结尾了，要么中途中断，要么匹配到最后一个字符了但不符合
-            if i >= strlen:
-                # 如果中途中断，则不会进入此条件，下次循环会进去后置特定字符逻辑
-                # 如果最后一个字符符合，则found=len-1,此时剩余应为空
-                # 如果最后一个字符不符合，判断是否是后置字符，如果是则也为空
-                if found_end == strlen-1 or x in right:
-                    # 字符串已完全遍历
-                    this.index = strlen
+                found_start = found_end
+            # 如果未到行末尾,才能continue,否则i=len了,不能continue,会造成下次退出循环,item_value未赋值
+            if i < this.str.len:
+                continue
+        # 否则匹配到边界或者完全没有匹配到
+        if found_start < 0:
+            # 完全没有匹配到
+            raise newException(ValueError, "匹配失败:"&this.str)
+        # 包含cond成立时当前字符x,如果结果字符串以某字符开始，我们配置了strip_left开头
+        # 例如解析request_line,开头有引号,我们仅在生成结果时过滤
+        if strip_left.len > 0:
+            while found_start < found_end:
+                if this.str[found_start] in strip_left:
+                    found_start+=1
                 else:
-                    this.index = found_end+1
+                    break;
+        item_value = this.str.substr(found_start, found_end)
+        # 执行到此处，已匹配到了想要的字符串，要么匹配到字符串结尾了，要么中途中断，要么匹配到最后一个字符了但不符合
+        if i >= this.str.len:
+            # 如果中途中断，则不会进入此条件，下次循环会进去后置特定字符逻辑
+            # 如果最后一个字符符合，则found=len-1,此时剩余应为空
+            # 如果最后一个字符不符合，判断是否是后置字符，如果是则也为空
+            if found_end == this.str.len-1 or x in right:
+                # 字符串已完全遍历
+                this.index = this.str.len
+            else:
+                this.index = found_end+1
         else:
-            if x in right:
-                # 去后置特定字符,如果当前字符就是最后一个字符，并且当前字符是特定字符，则i需等于len,以完全裁剪
-                if i < strlen:
-                    continue;
-                elif i == strlen:
+            while i < this.str.len:
+                if this.str[i] in right:
                     i+=1
-            this.index = i-1
-            return item_value
+                else:
+                    break
+            this.index = i;
+        return item_value
+
     # 防止前置字符去除时，直接continue完所有
     if item_value.len < 1:
         raise newException(ValueError, "匹配失败:"&this.str)
@@ -117,12 +122,13 @@ proc parse_remote_addr(this: var Line): string =
 
 # 去除可能存在的-,非空格
 proc parse_remote_user(this: var Line): string =
-    let strlen = this.str.len
-    while this.index < strlen:
-        if this.str[this.index] == '\45':
-            this.index+=1
+    var i = this.index
+    while i < this.str.len:
+        if this.str[i] == '\45':
+            i+=1
         else:
             break;
+    this.index = i
     return this.parse_item_trimx(blank, blank, not_space)
 
 # 匹配到],并且下一个是空格
