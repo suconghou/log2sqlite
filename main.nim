@@ -8,7 +8,6 @@ type Line = object
     str: string
 
 const blank = {' '}
-const quotation = {'"'}
 const square_left = {' ', '['}
 const square_right = {' ', ']'}
 
@@ -21,15 +20,13 @@ func substr(s: string, first: int, last: int): string =
     copyMem(result[0].addr, cast[cstring](cast[uint](s.cstring)+first.uint), l)
 
 # 根据条件解析，并去除前置后置x字符
-proc parse_item_trimx(this: var Line, left: set[char], right: set[char], cond: proc, strip_left: set[char] = {}): string =
-    var i = this.index;
-    while i < this.str.len:
-        if this.str[i] in left:
-            i+=1
+proc parse_item_trimx(this: var Line, left: set[char], right: set[char], cond: proc): string =
+    while this.index < this.str.len:
+        if this.str[this.index] in left:
+            this.index+=1
         else:
             break
-    this.index = i
-    var item_value: string;
+    var i = this.index;
     var found_start = -1;
     var found_end = -1;
     while i < this.str.len:
@@ -49,38 +46,39 @@ proc parse_item_trimx(this: var Line, left: set[char], right: set[char], cond: p
         if found_start < 0:
             # 完全没有匹配到
             raise newException(ValueError, "匹配失败:"&this.str)
-        # 包含cond成立时当前字符x,如果结果字符串以某字符开始，我们配置了strip_left开头
-        # 例如解析request_line,开头有引号,我们仅在生成结果时过滤
-        if strip_left.len > 0:
-            while found_start < found_end:
-                if this.str[found_start] in strip_left:
-                    found_start+=1
-                else:
-                    break;
-        item_value = this.str.substr(found_start, found_end)
-        # 执行到此处，已匹配到了想要的字符串，要么匹配到字符串结尾了，要么中途中断，要么匹配到最后一个字符了但不符合
-        if i >= this.str.len:
-            # 如果中途中断，则不会进入此条件，下次循环会进去后置特定字符逻辑
-            # 如果最后一个字符符合，则found=len-1,此时剩余应为空
-            # 如果最后一个字符不符合，判断是否是后置字符，如果是则也为空
-            if found_end == this.str.len-1 or x in right:
-                # 字符串已完全遍历
-                this.index = this.str.len
+        while i < this.str.len:
+            if this.str[i] in right:
+                i+=1
             else:
-                this.index = found_end+1
-        else:
-            while i < this.str.len:
-                if this.str[i] in right:
-                    i+=1
-                else:
-                    break
-            this.index = i;
-        return item_value
+                break
+        this.index = i;
+        # cond成立时,则包含当前字符x，否则不包含，截取的字符最少1字节
+        return this.str.substr(found_start, found_end)
+    raise newException(ValueError, "匹配失败:"&this.str)
 
-    # 防止前置字符去除时，直接continue完所有
-    if item_value.len < 1:
-        raise newException(ValueError, "匹配失败:"&this.str)
-    return item_value
+proc parse_item_quote_string(this: var Line): string =
+    var quote_start = -1
+    while this.index < this.str.len:
+        if quote_start < 0:
+            if this.str[this.index] == '\32':
+                this.index+=1
+                continue
+            elif this.str[this.index] == '\34':
+                quote_start = this.index
+                this.index+=1
+                continue
+            else:
+                break
+        if this.str[this.index] == '\34':
+            let end_s = this.index - 1;
+            this.index += 1
+            # 不包含quote_start的位置，也不包含最后i的位置
+            return this.str.substr(quote_start+1, end_s)
+        else:
+            this.index+=1
+    raise newException(ValueError, "匹配失败:"&this.str)
+
+
 
 # 仅数字
 proc digital(x: char, y: char, z: char): bool = x >= '\48' and x <= '\57'
@@ -100,16 +98,6 @@ proc square_right_space(x: char, y: char, z: char): bool = not (x == '\93' and y
 # 非空格
 proc not_space(x: char, y: char, z: char): bool = x != '\32'
 
-# 包含2个双引号，匹配到第二个双引号结束
-proc quote_string_end(): proc =
-    var q = 0;
-    return proc (x: char, y: char, z: char): bool =
-        if x == '\34':
-            q+=1
-        if (x == '\34' and q == 2):
-            return false
-        return true
-
 # 当前字符是空格，上个字符是字母,不包含空格
 proc string_end(x: char, y: char, z: char): bool = not (x == '\32' and ( (z >= '\65' and z <= '\90') or (z >= '\97' and z <= '\122')))
 
@@ -122,29 +110,21 @@ proc parse_remote_addr(this: var Line): string =
 
 # 去除可能存在的-,非空格
 proc parse_remote_user(this: var Line): string =
-    var i = this.index
-    while i < this.str.len:
-        if this.str[i] == '\45':
-            i+=1
-        else:
-            break;
-    this.index = i
+    while this.index < this.str.len:
+        case this.str[this.index]:
+            of '\45':
+                this.index+=1
+            else:
+                break;
     return this.parse_item_trimx(blank, blank, not_space)
 
 # 匹配到],并且下一个是空格
 proc parse_time_local(this: var Line): string =
     return this.parse_item_trimx(square_left, square_right, square_right_space)
 
-# 当前字符是双引号，下个字符是空格，上个字符是http版本,并且只能包含2个空格
+# 匹配到双引号结束位置
 proc parse_request_line(this: var Line): string =
-    var c = 0;
-    proc v(x: char, y: char, z: char): bool =
-        if x == '\32':
-            c+=1
-        if c > 2:
-            return false
-        return not (x == '\34' and y == '\32' and (z == '\49' or z == '\48'))
-    return this.parse_item_trimx(blank, blank, v, quotation)
+    return this.parse_item_quote_string()
 
 # 是数字
 proc parse_status_code(this: var Line): string =
@@ -154,17 +134,17 @@ proc parse_status_code(this: var Line): string =
 proc parse_body_bytes_sent(this: var Line): string =
     return this.parse_item_trimx(blank, blank, digital)
 
-# 当前字符是双引号，下个字符是空格
+# 匹配到双引号结束位置
 proc parse_http_referer(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, quote_string_end(), quotation)
+    return this.parse_item_quote_string()
 
-# 当前字符是双引号，下个字符是空格
+# 匹配到双引号结束位置
 proc parse_http_user_agent(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, quote_string_end(), quotation)
+    return this.parse_item_quote_string()
 
-# 当前字符是双引号，下个字符是空格
+# 匹配到双引号结束位置
 proc parse_http_x_forwarded_for(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, quote_string_end(), quotation)
+    return this.parse_item_quote_string()
 
 # 当前字符是空格，上个字符是字母
 proc parse_host(this: var Line): string =
