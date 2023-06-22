@@ -30,12 +30,6 @@ int digital_dot_minus(unsigned char x, unsigned char y)
     return (x >= 48 && x <= 57) || x == 46 || x == 45;
 }
 
-// 匹配到],并且下一个是空格
-int square_right_space(unsigned char x, unsigned char y)
-{
-    return !(x == 93 && y == 32);
-}
-
 // 非空格
 int not_space(unsigned char x, unsigned char y)
 {
