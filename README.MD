@@ -39,15 +39,15 @@ g++ -Wall -std=c++20 -static-libstdc++ -static-libgcc --static -Wl,-Bstatic,--gc
 
 mac
 ```
-gcc -Wall -std=c11 -O3 -lsqlite3 main.c
+gcc -Wall -std=c17 -O3 -lsqlite3 main.c
 ```
 
 linux 静态编译，因strptime函数的申明问题(https://stackoverflow.com/questions/43460876/trouble-including-function-declaration-for-strptime)
 
-我们需要使用`gnu11`标准
+我们需要使用`gnu17`标准
 ```
 
-gcc -Wall -std=gnu11 -static-libstdc++ -static-libgcc --static -Wl,-Bstatic,--gc-sections -O3 -ffunction-sections -fdata-sections main.c -lsqlite3 -o log2sqlite
+gcc -Wall -std=gnu17 -static-libstdc++ -static-libgcc --static -Wl,-Bstatic,--gc-sections -O3 -ffunction-sections -fdata-sections main.c -lsqlite3 -o log2sqlite
 
 ```
 

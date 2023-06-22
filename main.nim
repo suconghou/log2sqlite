@@ -7,9 +7,6 @@ type Line = object
     index: int
     str: string
 
-const blank = {' '}
-const square_left = {' ', '['}
-const square_right = {' ', ']'}
 
 # 类似内置substr的更快实现
 func substr(s: string, first: int, last: int): string =
@@ -19,10 +16,10 @@ func substr(s: string, first: int, last: int): string =
     result = newString(l)
     copyMem(result[0].addr, cast[cstring](cast[uint](s.cstring)+first.uint), l)
 
-# 根据条件解析，并去除前置后置x字符
-proc parse_item_trimx(this: var Line, left: set[char], right: set[char], cond: proc): string =
+# 根据条件解析，纳入字符，知道不满足条件，舍去前后空格
+proc parse_item_trim_space(this: var Line, cond: proc): string =
     while this.index < this.str.len:
-        if this.str[this.index] in left:
+        if this.str[this.index] == ' ':
             this.index+=1
         else:
             break
@@ -32,10 +29,9 @@ proc parse_item_trimx(this: var Line, left: set[char], right: set[char], cond: p
     while i < this.str.len:
         let x = this.str[i]
         i+=1; # i已指向下一个字符
-        let y = if i < this.str.len: this.str[i] else: '\x00'
-        let z = if i >= 2: this.str[i-2] else: '\x00'
-        # 符合预定格式,x为当前字符,y为下个字符,y可能为0,z为上一个字符
-        if cond(x, y, z):
+        let y = if i >= 2: this.str[i-2] else: '\0'
+        # 符合预定格式,x为当前字符,y为上个字符,可能为0
+        if cond(x, y):
             found_end = i-1
             if found_start < 0:
                 found_start = found_end
@@ -47,7 +43,7 @@ proc parse_item_trimx(this: var Line, left: set[char], right: set[char], cond: p
             # 完全没有匹配到
             raise newException(ValueError, "匹配失败:"&this.str)
         while i < this.str.len:
-            if this.str[i] in right:
+            if this.str[i] == ' ':
                 i+=1
             else:
                 break
@@ -56,57 +52,47 @@ proc parse_item_trimx(this: var Line, left: set[char], right: set[char], cond: p
         return this.str.substr(found_start, found_end)
     raise newException(ValueError, "匹配失败:"&this.str)
 
-proc parse_item_quote_string(this: var Line): string =
-    var quote_start = -1
+proc parse_item_wrap_string(this: var Line, left: char = '"', right: char = '"'): string =
     while this.index < this.str.len:
-        if quote_start < 0:
-            if this.str[this.index] == '\32':
-                this.index+=1
-                continue
-            elif this.str[this.index] == '\34':
-                quote_start = this.index
-                this.index+=1
-                continue
-            else:
-                break
-        if this.str[this.index] == '\34':
-            let end_s = this.index - 1;
-            this.index += 1
-            # 不包含quote_start的位置，也不包含最后i的位置
-            return this.str.substr(quote_start+1, end_s)
-        else:
+        if this.str[this.index] == '\32':
             this.index+=1
+            continue
+        elif this.str[this.index] == left:
+            let start = this.index
+            this.index+=1
+            let p = this.str.find(right, this.index)
+            if p < this.index:
+                break
+            else:
+                this.index = p+1
+                return this.str.substr(start+1, p-1)
+        else:
+            break
     raise newException(ValueError, "匹配失败:"&this.str)
 
 
 
 # 仅数字
-proc digital(x: char, y: char, z: char): bool = x >= '\48' and x <= '\57'
+proc digital(x: char, y: char): bool = x >= '\48' and x <= '\57'
 
 # 包含数字和.号
-proc digital_dot(x: char, y: char, z: char): bool = (x >= '\48' and x <= '\57') or x == '\46'
+proc digital_dot(x: char, y: char): bool = (x >= '\48' and x <= '\57') or x == '\46'
 
 # 包含数字字母和.号或:号（IPv4或IPv6）
-proc digital_dot_colon(x: char, y: char, z: char): bool = (x >= '\48' and x <= '\58') or x == '\46' or (x >= '\97' and x <= '\122')
+proc digital_dot_colon(x: char, y: char): bool = (x >= '\48' and x <= '\58') or x == '\46' or (x >= '\97' and x <= '\122')
 
 # 包含数字和.号或-号
-proc digital_dot_minus(x: char, y: char, z: char): bool = (x >= '\48' and x <= '\57') or x == '\46' or x == '\45'
-
-# 匹配到],并且下一个是空格
-proc square_right_space(x: char, y: char, z: char): bool = not (x == '\93' and y == '\32')
+proc digital_dot_minus(x: char, y: char): bool = (x >= '\48' and x <= '\57') or x == '\46' or x == '\45'
 
 # 非空格
-proc not_space(x: char, y: char, z: char): bool = x != '\32'
-
-# 当前字符是空格，上个字符是字母,不包含空格
-proc string_end(x: char, y: char, z: char): bool = not (x == '\32' and ( (z >= '\65' and z <= '\90') or (z >= '\97' and z <= '\122')))
+proc not_space(x: char, y: char): bool = x != '\32'
 
 # 当前是空格，上一个是-或者数字
-proc digital_or_none_end(x: char, y: char, z: char): bool = not (x == '\32' and ( (z >= '\48' and z <= '\57') or z == '\45'))
+proc digital_or_none_end(x: char, y: char): bool = not (x == '\32' and ( (y >= '\48' and y <= '\57') or y == '\45'))
 
 # 包含数字字母和.号或:号（IPv4或IPv6）
 proc parse_remote_addr(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, digital_dot_colon)
+    return this.parse_item_trim_space(digital_dot_colon)
 
 # 去除可能存在的-,非空格
 proc parse_remote_user(this: var Line): string =
@@ -116,71 +102,72 @@ proc parse_remote_user(this: var Line): string =
                 this.index+=1
             else:
                 break;
-    return this.parse_item_trimx(blank, blank, not_space)
+    return this.parse_item_trim_space(not_space)
 
 # 匹配到],并且下一个是空格
 proc parse_time_local(this: var Line): string =
-    return this.parse_item_trimx(square_left, square_right, square_right_space)
+    return this.parse_item_wrap_string('[', ']')
 
 # 匹配到双引号结束位置
 proc parse_request_line(this: var Line): string =
-    return this.parse_item_quote_string()
+    return this.parse_item_wrap_string()
 
 # 是数字
 proc parse_status_code(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, digital)
+    return this.parse_item_trim_space(digital)
 
 # 是数字
 proc parse_body_bytes_sent(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, digital)
+    return this.parse_item_trim_space(digital)
 
 # 匹配到双引号结束位置
 proc parse_http_referer(this: var Line): string =
-    return this.parse_item_quote_string()
+    return this.parse_item_wrap_string()
 
 # 匹配到双引号结束位置
 proc parse_http_user_agent(this: var Line): string =
-    return this.parse_item_quote_string()
+    return this.parse_item_wrap_string()
 
 # 匹配到双引号结束位置
 proc parse_http_x_forwarded_for(this: var Line): string =
-    return this.parse_item_quote_string()
+    return this.parse_item_wrap_string()
 
-# 当前字符是空格，上个字符是字母
+# 非空格的字符
 proc parse_host(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, string_end)
+    return this.parse_item_trim_space(not_space)
 
 # 数字
 proc parse_request_length(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, digital)
+    return this.parse_item_trim_space(digital)
 
 # 数字
 proc parse_bytes_sent(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, digital)
+    return this.parse_item_trim_space(digital)
 
 # 当前是空格，上一个是-或者数字
 proc parse_upstream_addr(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, digital_or_none_end)
+    return this.parse_item_trim_space(digital_or_none_end)
 
 # 当前是空格，上一个是-或者数字
 proc parse_upstream_status(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, digital_or_none_end)
+    return this.parse_item_trim_space(digital_or_none_end)
 
 # 数字和.号
 proc parse_request_time(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, digital_dot)
+    return this.parse_item_trim_space(digital_dot)
 
 # 数字和.号，或者-
 proc parse_upstream_response_time(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, digital_dot_minus)
+    return this.parse_item_trim_space(digital_dot_minus)
 
 # 数字和.号，或者-
 proc parse_upstream_connect_time(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, digital_dot_minus)
+    return this.parse_item_trim_space(digital_dot_minus)
 
 # 数字和.号，或者-
 proc parse_upstream_header_time(this: var Line): string =
-    return this.parse_item_trimx(blank, blank, digital_dot_minus)
+    return this.parse_item_trim_space(digital_dot_minus)
+
 
 
 template f(str: string): float =

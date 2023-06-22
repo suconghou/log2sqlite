@@ -4,65 +4,59 @@
 #include <time.h>
 #include "db.c"
 
-typedef int (*char_is_match)(unsigned char x, unsigned char y, unsigned char z);
+typedef int (*char_is_match)(unsigned char x, unsigned char y);
 
 // 仅数字
-int digital(unsigned char x, unsigned char y, unsigned char z)
+int digital(unsigned char x, unsigned char y)
 {
     return x >= 48 && x <= 57;
 }
 
 // 包含数字和.号
-int digital_dot(unsigned char x, unsigned char y, unsigned char z)
+int digital_dot(unsigned char x, unsigned char y)
 {
     return (x >= 48 && x <= 57) || x == 46;
 }
 
 // 包含数字字母和.号或:号（IPv4或IPv6）
-int digital_dot_colon(unsigned char x, unsigned char y, unsigned char z)
+int digital_dot_colon(unsigned char x, unsigned char y)
 {
     return (x >= 48 && x <= 58) || x == 46 || (x >= 97 && x <= 122);
 }
 
 // 包含数字和.号或-号
-int digital_dot_minus(unsigned char x, unsigned char y, unsigned char z)
+int digital_dot_minus(unsigned char x, unsigned char y)
 {
     return (x >= 48 && x <= 57) || x == 46 || x == 45;
 }
 
 // 匹配到],并且下一个是空格
-int square_right_space(unsigned char x, unsigned char y, unsigned char z)
+int square_right_space(unsigned char x, unsigned char y)
 {
     return !(x == 93 && y == 32);
 }
 
 // 非空格
-int not_space(unsigned char x, unsigned char y, unsigned char z)
+int not_space(unsigned char x, unsigned char y)
 {
     return x != 32;
 }
 
-// 当前字符是空格，上个字符是字母,不包含空格
-int string_end(unsigned char x, unsigned char y, unsigned char z)
-{
-    return !(x == 32 && ((z >= 65 && z <= 90) || (z >= 97 && z <= 122)));
-}
-
 // 当前是空格，上一个是-或者数字
-int digital_or_none_end(unsigned char x, unsigned char y, unsigned char z)
+int digital_or_none_end(unsigned char x, unsigned char y)
 {
-    return !(x == 32 && ((z >= 48 && z <= 57) || z == 45));
+    return !(x == 32 && ((y >= 48 && y <= 57) || y == 45));
 }
 
 // offset 字符串坐标
-int parse_item_trim_space(const char *s, int *offset, const int len, char *item_value, char_is_match cond, const int strip_square)
+int parse_item_trim_space(const char *s, int *offset, const int len, char *item_value, char_is_match cond)
 {
-    unsigned char x, y, z;
+    unsigned char x, y;
     int i = *offset;
     while (i < len)
     {
         x = s[i];
-        if (x == ' ' || (strip_square && x == '['))
+        if (x == ' ')
         {
             i++;
         }
@@ -79,9 +73,8 @@ int parse_item_trim_space(const char *s, int *offset, const int len, char *item_
     {
         x = s[i];
         i++;
-        y = i < len ? s[i] : 0;
-        z = i >= 2 ? s[i - 2] : 0;
-        if (cond(x, y, z))
+        y = i >= 2 ? s[i - 2] : 0;
+        if (cond(x, y))
         {
             found_end = i - 1;
             if (found_start < 0)
@@ -104,7 +97,7 @@ int parse_item_trim_space(const char *s, int *offset, const int len, char *item_
         while (i < len)
         {
             x = s[i];
-            if (x == ' ' || (strip_square && x == ']'))
+            if (x == ' ')
             {
                 i++;
             }
@@ -119,51 +112,45 @@ int parse_item_trim_space(const char *s, int *offset, const int len, char *item_
     return found_start;
 }
 
-int parse_item_quote_string(const char *s, int *offset, const int len, char *item_value)
+int parse_item_wrap_string(const char *s, int *offset, const int len, char *item_value, const char left, const char right)
 {
-    int quote_start = -1;
     int i = *offset;
     while (i < len)
     {
-        if (quote_start < 0)
+        if (s[i] == ' ')
         {
-            if (s[i] == ' ')
+            i++;
+            continue;
+        }
+        else if (s[i] == left)
+        {
+            i++;
+            char *p = memchr(s + i, right, len - i);
+            if (p)
             {
-                i++;
-                continue;
-            }
-            else if (s[i] == '"')
-            {
-                quote_start = i;
-                i++;
-                continue;
+                const int v_len = p - s - i;
+                memcpy(item_value, s + i, v_len);
+                item_value[v_len] = '\0';
+                *offset = i + v_len + 1;
+                return 1;
             }
             else
             {
                 break;
             }
         }
-        if (s[i] == '"')
-        {
-            const int v_len = i - quote_start - 1;
-            // 不包含quote_start的位置，也不包含最后i的位置
-            memcpy(item_value, s + quote_start + 1, v_len);
-            item_value[v_len] = '\0';
-            i++;
-            break;
-        }
         else
         {
-            i++;
+            break;
         }
     }
     *offset = i;
-    return quote_start;
+    return -1;
 }
 
 int parse_remote_addr(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_dot_colon, 0);
+    return parse_item_trim_space(s, offset, len, item_value, digital_dot_colon);
 }
 
 int parse_remote_user(const char *s, int *offset, const int len, char *item_value)
@@ -181,87 +168,87 @@ int parse_remote_user(const char *s, int *offset, const int len, char *item_valu
         }
     }
     *offset = i;
-    return parse_item_trim_space(s, offset, len, item_value, not_space, 0);
+    return parse_item_trim_space(s, offset, len, item_value, not_space);
 }
 
 int parse_time_local(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, square_right_space, 1);
+    return parse_item_wrap_string(s, offset, len, item_value, '[', ']');
 }
 
 int parse_request_line(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_quote_string(s, offset, len, item_value);
+    return parse_item_wrap_string(s, offset, len, item_value, '"', '"');
 }
 
 int parse_status_code(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital, 0);
+    return parse_item_trim_space(s, offset, len, item_value, digital);
 }
 
 int parse_body_bytes_sent(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital, 0);
+    return parse_item_trim_space(s, offset, len, item_value, digital);
 }
 
 int parse_http_referer(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_quote_string(s, offset, len, item_value);
+    return parse_item_wrap_string(s, offset, len, item_value, '"', '"');
 }
 
 int parse_http_user_agent(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_quote_string(s, offset, len, item_value);
+    return parse_item_wrap_string(s, offset, len, item_value, '"', '"');
 }
 
 int parse_http_x_forwarded_for(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_quote_string(s, offset, len, item_value);
+    return parse_item_wrap_string(s, offset, len, item_value, '"', '"');
 }
 
 int parse_host(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, string_end, 0);
+    return parse_item_trim_space(s, offset, len, item_value, not_space);
 }
 
 int parse_request_length(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital, 0);
+    return parse_item_trim_space(s, offset, len, item_value, digital);
 }
 
 int parse_bytes_sent(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital, 0);
+    return parse_item_trim_space(s, offset, len, item_value, digital);
 }
 
 int parse_upstream_addr(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_or_none_end, 0);
+    return parse_item_trim_space(s, offset, len, item_value, digital_or_none_end);
 }
 
 int parse_upstream_status(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_or_none_end, 0);
+    return parse_item_trim_space(s, offset, len, item_value, digital_or_none_end);
 }
 
 int parse_request_time(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_dot, 0);
+    return parse_item_trim_space(s, offset, len, item_value, digital_dot);
 }
 
 int parse_upstream_response_time(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_dot_minus, 0);
+    return parse_item_trim_space(s, offset, len, item_value, digital_dot_minus);
 }
 
 int parse_upstream_connect_time(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_dot_minus, 0);
+    return parse_item_trim_space(s, offset, len, item_value, digital_dot_minus);
 }
 
 int parse_upstream_header_time(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_dot_minus, 0);
+    return parse_item_trim_space(s, offset, len, item_value, digital_dot_minus);
 }
 
 static inline void byteFormat(unsigned long s, char *out)
