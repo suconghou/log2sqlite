@@ -49,8 +49,8 @@ class Line
 {
 private:
     int index;
-    int len;
-    char const *str;
+    const int len;
+    const char *const str;
 
     int
     parse_item_trim_space(char *item_value, char_is_match cond)
@@ -248,9 +248,7 @@ public:
     }
 };
 
-Line::Line(char const *line)
+Line::Line(const char *const line) : len(strlen(line)), str(line)
 {
-    str = line;
     index = 0;
-    len = strlen(line);
 }
