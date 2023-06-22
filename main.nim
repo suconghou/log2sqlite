@@ -16,7 +16,7 @@ func substr(s: string, first: int, last: int): string =
     result = newString(l)
     copyMem(result[0].addr, cast[cstring](cast[uint](s.cstring)+first.uint), l)
 
-# 根据条件解析，纳入字符，知道不满足条件，舍去前后空格
+# 根据条件匹配直至不满足条件，舍去前后空格
 proc parse_item_trim_space(this: var Line, cond: proc): string =
     while this.index < this.str.len:
         if this.str[this.index] == ' ':
