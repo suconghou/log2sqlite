@@ -18,20 +18,18 @@ func substr(s: string, first: int, last: int): string =
 
 # 根据条件匹配直至不满足条件，舍去前后空格
 proc parse_item_trim_space(this: var Line, cond: proc): string =
-    while this.index < this.str.len:
-        if this.str[this.index] == ' ':
-            this.index+=1
-        else:
-            break
+    while this.index < this.str.len and this.str[this.index] == ' ':
+        this.index+=1
     var i = this.index;
     var found_start = -1;
     var found_end = -1;
+    var y = if i > 0: this.str[i-1] else: '\0'
     while i < this.str.len:
         let x = this.str[i]
         i+=1; # i已指向下一个字符
-        let y = if i >= 2: this.str[i-2] else: '\0'
         # 符合预定格式,x为当前字符,y为上个字符,可能为0
         if cond(x, y):
+            y = x
             found_end = i-1
             if found_start < 0:
                 found_start = found_end
@@ -42,34 +40,25 @@ proc parse_item_trim_space(this: var Line, cond: proc): string =
         if found_start < 0:
             # 完全没有匹配到
             raise newException(ValueError, "匹配失败:"&this.str)
-        while i < this.str.len:
-            if this.str[i] == ' ':
-                i+=1
-            else:
-                break
+        while i < this.str.len and this.str[i] == ' ':
+            i+=1
         this.index = i;
         # cond成立时,则包含当前字符x，否则不包含，截取的字符最少1字节
         return this.str.substr(found_start, found_end)
     raise newException(ValueError, "匹配失败:"&this.str)
 
 proc parse_item_wrap_string(this: var Line, left: char = '"', right: char = '"'): string =
-    while this.index < this.str.len:
-        if this.str[this.index] == '\32':
-            this.index+=1
-            continue
-        elif this.str[this.index] == left:
-            let start = this.index
-            this.index+=1
-            let p = this.str.find(right, this.index)
-            if p < this.index:
-                break
-            else:
-                this.index = p+1
-                return this.str.substr(start+1, p-1)
-        else:
-            break
-    raise newException(ValueError, "匹配失败:"&this.str)
-
+    while this.index < this.str.len and this.str[this.index] == '\32':
+        this.index+=1
+    if this.index >= this.str.len or this.str[this.index] != left:
+        raise newException(ValueError, "匹配失败:"&this.str)
+    this.index+=1
+    let start = this.index
+    let p = this.str.find(right, start)
+    if p < start:
+        raise newException(ValueError, "匹配失败:"&this.str)
+    this.index = p+1
+    return this.str.substr(start, p-1)
 
 
 # 仅数字
@@ -96,12 +85,8 @@ proc parse_remote_addr(this: var Line): string =
 
 # 去除可能存在的-,非空格
 proc parse_remote_user(this: var Line): string =
-    while this.index < this.str.len:
-        case this.str[this.index]:
-            of '\45':
-                this.index+=1
-            else:
-                break;
+    while this.index < this.str.len and this.str[this.index]=='\45':
+        this.index+=1
     return this.parse_item_trim_space(not_space)
 
 # 匹配到],并且下一个是空格
