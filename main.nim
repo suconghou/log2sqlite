@@ -6,6 +6,7 @@ import os, tables, sets, strformat, strutils, sqlite3, db_sqlite, times
 type Line = object
     index: int
     str: string
+    l: int
 
 
 # 类似内置substr的更快实现
@@ -18,29 +19,29 @@ func substr(s: string, first: int, last: int): string =
 
 # 根据条件匹配直至不满足条件，舍去前后空格
 proc parse_item_trim_space(this: var Line, cond: proc): string =
-    while this.index < this.str.len and this.str[this.index] == ' ':
+    while this.index < this.l and this.str[this.index] == ' ':
         this.index+=1
     var i = this.index;
     var found_start = -1;
     var found_end = -1;
-    var y = if i > 0: this.str[i-1] else: '\0'
-    while i < this.str.len:
+    var y = if likely(i > 0): this.str[i-1] else: '\0'
+    while i < this.l:
         let x = this.str[i]
         i+=1; # i已指向下一个字符
         # 符合预定格式,x为当前字符,y为上个字符,可能为0
-        if cond(x, y):
+        if likely(cond(x, y)):
             y = x
             found_end = i-1
-            if found_start < 0:
+            if unlikely(found_start < 0):
                 found_start = found_end
             # 如果未到行末尾,才能continue,否则i=len了,不能continue,会造成下次退出循环,item_value未赋值
-            if i < this.str.len:
+            if i < this.l:
                 continue
         # 否则匹配到边界或者完全没有匹配到
-        if found_start < 0:
+        if unlikely(found_start < 0):
             # 完全没有匹配到
             raise newException(ValueError, "匹配失败:"&this.str)
-        while i < this.str.len and this.str[i] == ' ':
+        while i < this.l and this.str[i] == ' ':
             i+=1
         this.index = i;
         # cond成立时,则包含当前字符x，否则不包含，截取的字符最少1字节
@@ -48,9 +49,9 @@ proc parse_item_trim_space(this: var Line, cond: proc): string =
     raise newException(ValueError, "匹配失败:"&this.str)
 
 proc parse_item_wrap_string(this: var Line, left: char = '"', right: char = '"'): string =
-    while this.index < this.str.len and this.str[this.index] == '\32':
+    while this.index < this.l and this.str[this.index] == '\32':
         this.index+=1
-    if this.index >= this.str.len or this.str[this.index] != left:
+    if this.index >= this.l or this.str[this.index] != left:
         raise newException(ValueError, "匹配失败:"&this.str)
     this.index+=1
     let start = this.index
@@ -85,7 +86,7 @@ proc parse_remote_addr(this: var Line): string =
 
 # 去除可能存在的-,非空格
 proc parse_remote_user(this: var Line): string =
-    while this.index < this.str.len and this.str[this.index]=='\45':
+    while this.index < this.l and this.str[this.index] == '\45':
         this.index+=1
     return this.parse_item_trim_space(not_space)
 
