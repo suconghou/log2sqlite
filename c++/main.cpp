@@ -28,6 +28,8 @@ int main(int argc, char *argv[])
             perror(argv[1]);
             return 1;
         }
+        char buf[81920];
+        fh.rdbuf()->pubsetbuf(buf, sizeof(buf));
         return process(fh);
     }
     catch (char *e)
