@@ -190,7 +190,7 @@ proc process(filename: File|string) =
 
 
     proc parse_line(line: string) =
-        var l = Line(str: line)
+        var l = Line(str: line, l: line.len)
         let remote_addr = l.parse_remote_addr()
         let remote_user = l.parse_remote_user()
         let time_local = l.parse_time_local()
