@@ -31,7 +31,7 @@ nim --mm:arc -d:release --dynlibOverride:libsqlite3 --passC:-flto --passL:-flto 
 ```
 g++ -Wall -std=c++20 -O3 -lsqlite3 main.cpp
 
-g++ -Wall -std=c++20 -static-libstdc++ -static-libgcc --static -Wl,-Bstatic,--gc-sections -O3 -ffunction-sections -fdata-sections main.cpp -lsqlite3 -o log2sqlite
+g++ -Wall -std=c++20 -flto=auto -static-libstdc++ -static-libgcc --static -Wl,-Bstatic,--gc-sections -O3 -ffunction-sections -fdata-sections main.cpp -lsqlite3 -o log2sqlite
 ```
 
 ## c 版本
@@ -47,7 +47,7 @@ linux 静态编译，因strptime函数的申明问题(https://stackoverflow.com/
 我们需要使用`gnu17`标准
 ```
 
-gcc -Wall -std=gnu17 -static-libstdc++ -static-libgcc --static -Wl,-Bstatic,--gc-sections -O3 -ffunction-sections -fdata-sections main.c -lsqlite3 -o log2sqlite
+gcc -Wall -std=gnu17 -flto=auto -static-libstdc++ -static-libgcc --static -Wl,-Bstatic,--gc-sections -O3 -ffunction-sections -fdata-sections main.c -lsqlite3 -o log2sqlite
 
 ```
 
