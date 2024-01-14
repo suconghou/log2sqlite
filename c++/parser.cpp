@@ -21,10 +21,10 @@ bool digital_dot(unsigned char x, unsigned char y)
     return (x >= 48 && x <= 57) || x == 46;
 }
 
-// 包含数字字母和.号或:号（IPv4或IPv6）
+// 包含数字字母[a-f]和.号或:号（IPv4或IPv6）
 bool digital_dot_colon(unsigned char x, unsigned char y)
 {
-    return (x >= 48 && x <= 58) || x == 46 || (x >= 97 && x <= 122);
+    return (x >= 48 && x <= 58) || x == 46 || (x >= 97 && x <= 102);
 }
 
 // 包含数字和.号或-号

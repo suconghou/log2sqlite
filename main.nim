@@ -68,8 +68,8 @@ proc digital(x: char, y: char): bool = x >= '\48' and x <= '\57'
 # 包含数字和.号
 proc digital_dot(x: char, y: char): bool = (x >= '\48' and x <= '\57') or x == '\46'
 
-# 包含数字字母和.号或:号（IPv4或IPv6）
-proc digital_dot_colon(x: char, y: char): bool = (x >= '\48' and x <= '\58') or x == '\46' or (x >= '\97' and x <= '\122')
+# 包含数字字母[a-f]和.号或:号（IPv4或IPv6）
+proc digital_dot_colon(x: char, y: char): bool = (x >= '\48' and x <= '\58') or x == '\46' or (x >= '\97' and x <= '\102')
 
 # 包含数字和.号或-号
 proc digital_dot_minus(x: char, y: char): bool = (x >= '\48' and x <= '\57') or x == '\46' or x == '\45'
