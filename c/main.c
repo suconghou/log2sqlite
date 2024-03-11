@@ -226,11 +226,23 @@ static inline void byteFormat(unsigned long s, char *out)
     sprintf(out, "%.2f %cB", n, *unit);
 }
 
+struct
+{
+    char k[32];
+    long v;
+} citem;
 long unix_time(const char *timestr)
 {
+    if (strcmp(citem.k, timestr) == 0)
+    {
+        return citem.v;
+    }
     struct tm t = {};
     strptime(timestr, "%d/%b/%Y:%H:%M:%S", &t);
-    return mktime(&t);
+    long x = mktime(&t);
+    strcpy(citem.k, timestr);
+    citem.v = x;
+    return x;
 }
 
 int main(int argc, char *argv[])

@@ -188,7 +188,9 @@ proc process(filename: File|string) =
     let insertStmt = db.prepare("INSERT INTO `nginx_log`(time,remote_addr,remote_user,request,status,body_bytes_sent,http_referer,http_user_agent,http_x_forwarded_for,host,request_length,bytes_sent,upstream_addr,upstream_status,request_time,upstream_response_time,upstream_connect_time,upstream_header_time) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);")
 
 
-
+    var ctime = ("", 0.int64)
+    let f = initTimeFormat("d/MMM/YYYY:hh:mm:ss ZZZ")
+    let z = local()
     proc parse_line(line: string) =
         var l = Line(str: line, l: line.len)
         let remote_addr = l.parse_remote_addr()
@@ -214,8 +216,10 @@ proc process(filename: File|string) =
         let sent_num = parseInt(bytes_sent)
         let recv_num = parseInt(request_length)
 
-        let time = parse(time_local, "d/MMM/YYYY:hh:mm:ss ZZZ").toTime().toUnix()
-        db.exec(insertStmt, time, remote_addr, remote_user, request_line, parseInt(status_code), parseInt(body_bytes_sent), http_referer, http_user_agent, http_x_forwarded_for, host, recv_num, sent_num, upstream_addr, upstream_status.i, parseFloat(request_time), upstream_response_time.f, upstream_connect_time.f, upstream_header_time.f)
+        if ctime[0] != time_local:
+            ctime[1] = time_local.parse(f, z, DefaultLocale).toTime().toUnix()
+            ctime[0] = time_local
+        db.exec(insertStmt, ctime[1], remote_addr, remote_user, request_line, parseInt(status_code), parseInt(body_bytes_sent), http_referer, http_user_agent, http_x_forwarded_for, host, recv_num, sent_num, upstream_addr, upstream_status.i, parseFloat(request_time), upstream_response_time.f, upstream_connect_time.f, upstream_header_time.f)
 
         total_bytes_sent += sent_num
         total_bytes_recv += recv_num

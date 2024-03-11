@@ -61,9 +61,9 @@ gcc -Wall -std=gnu17 -flto=auto -static-libstdc++ -static-libgcc --static -Wl,-B
 
 | 版本  | 时间  |
 | ------ | ------    |
-| c     | 15.380s    |
-| c++   | 18.942s    |
-| nim   | 14.024s    |
+| c     | 8.805s     |
+| c++   | 11.718s    |
+| nim   | 10.024s    |
 
 可使用sqlite3命令对数据进行分析
 
