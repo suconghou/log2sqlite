@@ -45,32 +45,41 @@ static inline void byteFormat(unsigned long s, char *out)
 
 int process(istream &fh)
 {
-    char str[8192] = {0};
-    char value[8192] = {0}; // 后面多处使用此内存池复用
-    unsigned long total_bytes_sent = 0;
-    unsigned long total_bytes_recv = 0;
-    unsigned int total_lines = 0;
-
     auto c = dbutil();
     int res = c.begin();
     CHECK(res);
+
+    char str[8192] = {0};
+
+    unsigned long total_bytes_sent = 0;
+    unsigned long total_bytes_recv = 0;
+    unsigned int total_lines = 0;
+    char remote_addr[1024] = {0};
+    char remote_user[1024] = {0};
+    char request_line[8192] = {0};
+    char http_referer[4096] = {0};
+    char http_user_agent[4096] = {0};
+    char http_x_forwarded_for[1024] = {0};
+    char host[1024] = {0};
+    char upstream_addr[1024] = {0};
+
+    char value[1024] = {0}; // 后面多处使用此内存池复用
+
     while (fh.getline(str, sizeof(str)))
     {
         auto a = Line(str);
-        if (a.parse_remote_addr(value) < 0)
-        {
-            cerr << str << endl;
-            continue;
-        }
-        string remote_addr = value;
-
-        if (a.parse_remote_user(value) < 0)
+        if (a.parse_remote_addr(remote_addr) < 0)
         {
             cerr << str << endl;
             continue;
         }
 
-        string remote_user = value;
+        if (a.parse_remote_user(remote_user) < 0)
+        {
+            cerr << str << endl;
+            continue;
+        }
+
         if (a.parse_time_local(value) < 0)
         {
             cerr << str << endl;
@@ -78,12 +87,11 @@ int process(istream &fh)
         }
         long time_local = unix_time(value);
 
-        if (a.parse_request_line(value) < 0)
+        if (a.parse_request_line(request_line) < 0)
         {
             cerr << str << endl;
             continue;
         }
-        string request_line = value;
 
         if (a.parse_status_code(value) < 0)
         {
@@ -99,33 +107,29 @@ int process(istream &fh)
         }
         int body_bytes_sent = atoi(value);
 
-        if (a.parse_http_referer(value) < 0)
+        if (a.parse_http_referer(http_referer) < 0)
         {
             cerr << str << endl;
             continue;
         }
-        string http_referer = value;
 
-        if (a.parse_http_user_agent(value) < 0)
+        if (a.parse_http_user_agent(http_user_agent) < 0)
         {
             cerr << str << endl;
             continue;
         }
-        string http_user_agent = value;
 
-        if (a.parse_http_x_forwarded_for(value) < 0)
+        if (a.parse_http_x_forwarded_for(http_x_forwarded_for) < 0)
         {
             cerr << str << endl;
             continue;
         }
-        string http_x_forwarded_for = value;
 
-        if (a.parse_host(value) < 0)
+        if (a.parse_host(host) < 0)
         {
             cerr << str << endl;
             continue;
         }
-        string host = value;
 
         if (a.parse_request_length(value) < 0)
         {
@@ -141,13 +145,11 @@ int process(istream &fh)
         }
         int bytes_sent = atoi(value);
 
-        if (a.parse_upstream_addr(value) < 0)
+        if (a.parse_upstream_addr(upstream_addr) < 0)
         {
             cerr << str << endl;
             continue;
         }
-
-        string upstream_addr = value;
 
         if (a.parse_upstream_status(value) < 0)
         {

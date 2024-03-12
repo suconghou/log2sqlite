@@ -276,129 +276,104 @@ int main(int argc, char *argv[])
     unsigned long total_bytes_sent = 0;
     unsigned long total_bytes_recv = 0;
     unsigned int total_lines = 0;
-    char value[8192] = {0};
+    char remote_addr[1024] = {0};
+    char remote_user[1024] = {0};
+    char request_line[8192] = {0};
+    char http_referer[4096] = {0};
+    char http_user_agent[4096] = {0};
+    char http_x_forwarded_for[1024] = {0};
+    char host[1024] = {0};
+    char upstream_addr[1024] = {0};
+
+    char value[1024] = {0};
 
     while (fgets(s, sizeof s, input) != NULL)
     {
         int offset = 0;
         int len = strlen(s);
 
-        char *remote_addr = NULL;
-        char *remote_user = NULL;
-        long time_local = 0;
-        char *request_line = NULL;
-        int status_code = 0;
-        char *http_referer = NULL;
-        char *http_user_agent = NULL;
-        char *http_x_forwarded_for = NULL;
-        char *host = NULL;
-        int request_length = 0;
-        int bytes_sent = 0;
-        char *upstream_addr = NULL;
-        int upstream_status = 0;
-        double request_time = 0;
-        double upstream_response_time = 0;
-        double upstream_connect_time = 0;
-        double upstream_header_time = 0;
-
-        if (parse_remote_addr(s, &offset, len, value) < 0)
+        if (parse_remote_addr(s, &offset, len, remote_addr) < 0)
         {
             goto error_line;
         }
-        remote_addr = malloc(strlen(value) + 1);
-        strcpy(remote_addr, value);
-        if (parse_remote_user(s, &offset, len, value) < 0)
+        if (parse_remote_user(s, &offset, len, remote_user) < 0)
         {
             goto error_line;
         }
-        remote_user = malloc(strlen(value) + 1);
-        strcpy(remote_user, value);
         if (parse_time_local(s, &offset, len, value) < 0)
         {
             goto error_line;
         }
-        time_local = unix_time(value);
-        if (parse_request_line(s, &offset, len, value) < 0)
+        long time_local = unix_time(value);
+        if (parse_request_line(s, &offset, len, request_line) < 0)
         {
             goto error_line;
         }
-        request_line = malloc(strlen(value) + 1);
-        strcpy(request_line, value);
         if (parse_status_code(s, &offset, len, value) < 0)
         {
             goto error_line;
         }
-        status_code = atoi(value);
+        int status_code = atoi(value);
         if (parse_body_bytes_sent(s, &offset, len, value) < 0)
         {
             goto error_line;
         }
         int body_bytes_sent = atoi(value);
-        if (parse_http_referer(s, &offset, len, value) < 0)
+        if (parse_http_referer(s, &offset, len, http_referer) < 0)
         {
             goto error_line;
         }
-        http_referer = malloc(strlen(value) + 1);
-        strcpy(http_referer, value);
-        if (parse_http_user_agent(s, &offset, len, value) < 0)
+        if (parse_http_user_agent(s, &offset, len, http_user_agent) < 0)
         {
             goto error_line;
         }
-        http_user_agent = malloc(strlen(value) + 1);
-        strcpy(http_user_agent, value);
-        if (parse_http_x_forwarded_for(s, &offset, len, value) < 0)
+        if (parse_http_x_forwarded_for(s, &offset, len, http_x_forwarded_for) < 0)
         {
             goto error_line;
         }
-        http_x_forwarded_for = malloc(strlen(value) + 1);
-        strcpy(http_x_forwarded_for, value);
-        if (parse_host(s, &offset, len, value) < 0)
+        if (parse_host(s, &offset, len, host) < 0)
         {
             goto error_line;
         }
-        host = malloc(strlen(value) + 1);
-        strcpy(host, value);
         if (parse_request_length(s, &offset, len, value) < 0)
         {
             goto error_line;
         }
-        request_length = atoi(value);
+        int request_length = atoi(value);
         if (parse_bytes_sent(s, &offset, len, value) < 0)
         {
             goto error_line;
         }
-        bytes_sent = atoi(value);
-        if (parse_upstream_addr(s, &offset, len, value) < 0)
+        int bytes_sent = atoi(value);
+        if (parse_upstream_addr(s, &offset, len, upstream_addr) < 0)
         {
             goto error_line;
         }
-        upstream_addr = malloc(strlen(value) + 1);
-        strcpy(upstream_addr, value);
         if (parse_upstream_status(s, &offset, len, value) < 0)
         {
             goto error_line;
         }
-        upstream_status = atoi(value);
+        int upstream_status = atoi(value);
         if (parse_request_time(s, &offset, len, value) < 0)
         {
             goto error_line;
         }
-        request_time = atof(value);
+        double request_time = atof(value);
         if (parse_upstream_response_time(s, &offset, len, value) < 0)
         {
             goto error_line;
         }
-        upstream_response_time = atof(value);
+        double upstream_response_time = atof(value);
         if (parse_upstream_connect_time(s, &offset, len, value) < 0)
         {
             goto error_line;
         }
-        upstream_connect_time = atof(value);
+        double upstream_connect_time = atof(value);
         if (parse_upstream_header_time(s, &offset, len, value) < 0)
         {
             goto error_line;
         }
-        upstream_header_time = atof(value);
+        double upstream_header_time = atof(value);
 
         // 这一行 所有都已正确解析，插入table中
         total_lines++;
@@ -408,25 +383,10 @@ int main(int argc, char *argv[])
         res = db_insert(time_local, remote_addr, remote_user, request_line, status_code, body_bytes_sent, http_referer, http_user_agent, http_x_forwarded_for, host, request_length, bytes_sent, upstream_addr, upstream_status, request_time, upstream_response_time, upstream_connect_time, upstream_header_time);
         CHECK(res);
 
-        free(remote_addr);
-        free(remote_user);
-        free(request_line);
-        free(http_referer);
-        free(http_user_agent);
-        free(http_x_forwarded_for);
-        free(host);
-        free(upstream_addr);
         continue;
 
     error_line:
-        free(remote_addr);
-        free(remote_user);
-        free(request_line);
-        free(http_referer);
-        free(http_user_agent);
-        free(http_x_forwarded_for);
-        free(host);
-        free(upstream_addr);
+
         fprintf(stderr, "%s", s);
     }
 

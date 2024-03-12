@@ -68,21 +68,21 @@ public:
     }
 
     // 如果出错将会抛出错误，否则必然返回0
-    int insert_log(long time, string &remote_addr, string &remote_user, string &request, int status, int body_bytes_sent, string &http_referer, string &http_user_agent, string &http_x_forwarded_for, string &host, int request_length, int bytes_sent, string &upstream_addr, int upstream_status, double request_time, double upstream_response_time, double upstream_connect_time, double upstream_header_time)
+    int insert_log(long time, const char *remote_addr, const char *remote_user, const char *request, int status, int body_bytes_sent, const char *http_referer, const char *http_user_agent, const char *http_x_forwarded_for, const char *host, int request_length, int bytes_sent, const char *upstream_addr, int upstream_status, double request_time, double upstream_response_time, double upstream_connect_time, double upstream_header_time)
     {
         CHECKZERO(sqlite3_bind_int(stmt_log, 1, time));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 2, remote_addr.c_str(), -1, SQLITE_STATIC));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 3, remote_user.c_str(), -1, SQLITE_STATIC));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 4, request.c_str(), -1, SQLITE_STATIC));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 2, remote_addr, -1, SQLITE_STATIC));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 3, remote_user, -1, SQLITE_STATIC));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 4, request, -1, SQLITE_STATIC));
         CHECKZERO(sqlite3_bind_int(stmt_log, 5, status));
         CHECKZERO(sqlite3_bind_int(stmt_log, 6, body_bytes_sent));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 7, http_referer.c_str(), -1, SQLITE_STATIC));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 8, http_user_agent.c_str(), -1, SQLITE_STATIC));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 9, http_x_forwarded_for.c_str(), -1, SQLITE_STATIC));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 10, host.c_str(), -1, SQLITE_STATIC));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 7, http_referer, -1, SQLITE_STATIC));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 8, http_user_agent, -1, SQLITE_STATIC));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 9, http_x_forwarded_for, -1, SQLITE_STATIC));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 10, host, -1, SQLITE_STATIC));
         CHECKZERO(sqlite3_bind_int(stmt_log, 11, request_length));
         CHECKZERO(sqlite3_bind_int(stmt_log, 12, bytes_sent));
-        CHECKZERO(sqlite3_bind_text(stmt_log, 13, upstream_addr.c_str(), -1, SQLITE_STATIC));
+        CHECKZERO(sqlite3_bind_text(stmt_log, 13, upstream_addr, -1, SQLITE_STATIC));
         CHECKZERO(sqlite3_bind_int(stmt_log, 14, upstream_status));
         CHECKZERO(sqlite3_bind_double(stmt_log, 15, request_time));
         CHECKZERO(sqlite3_bind_double(stmt_log, 16, upstream_response_time));

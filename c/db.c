@@ -61,7 +61,7 @@ int db_begin()
     return 0;
 }
 
-int db_insert(long time, char *remote_addr, char *remote_user, char *request, int status, int body_bytes_sent, char *http_referer, char *http_user_agent, char *http_x_forwarded_for, char *host, int request_length, int bytes_sent, char *upstream_addr, int upstream_status, double request_time, double upstream_response_time, double upstream_connect_time, double upstream_header_time)
+int db_insert(long time, const char *remote_addr, const char *remote_user, const char *request, int status, int body_bytes_sent, const char *http_referer, const char *http_user_agent, const char *http_x_forwarded_for, const char *host, int request_length, int bytes_sent, const char *upstream_addr, int upstream_status, double request_time, double upstream_response_time, double upstream_connect_time, double upstream_header_time)
 {
     int res = sqlite3_bind_int(stmt_log, 1, time);
     CHECK(res);

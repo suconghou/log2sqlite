@@ -54,15 +54,15 @@ gcc -Wall -std=gnu17 -flto=auto -static-libstdc++ -static-libgcc --static -Wl,-B
 注意： `-lsqlite3` 必须在`main.c`之后
 
 
-每秒约处理10万条日志，c++版本比c版本慢约10%,nim版本和c版本速度相当
+每秒约处理20万条日志，c++版本比c版本慢约10%,nim版本和c++版本速度相当
 
 
 测试数据700MB+, 约200万行
 
 | 版本  | 时间  |
 | ------ | ------    |
-| c     | 8.805s     |
-| c++   | 11.718s    |
+| c     | 7.395s     |
+| c++   | 10.791s    |
 | nim   | 10.024s    |
 
 可使用sqlite3命令对数据进行分析
