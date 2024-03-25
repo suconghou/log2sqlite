@@ -25,12 +25,13 @@ long unix_time(const char *timestr)
     return x;
 }
 
+// out 空间至少有32字节
 static inline void byteFormat(unsigned long s, char *out)
 {
     char const *unit = "KMGTPEZY";
     if (s < 1024)
     {
-        sprintf(out, "%lu B", s);
+        snprintf(out, 32, "%lu B", s);
         return;
     }
     unit--;
@@ -40,7 +41,7 @@ static inline void byteFormat(unsigned long s, char *out)
         n /= 1024;
         unit++;
     }
-    sprintf(out, "%.2f %cB", n, *unit);
+    snprintf(out, 32, "%.2f %cB", n, *unit);
 }
 
 int process(istream &fh)
