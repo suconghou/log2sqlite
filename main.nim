@@ -189,7 +189,7 @@ proc process(filename: File|string) =
 
 
     var ctime = ("", 0.int64)
-    let f = initTimeFormat("d/MMM/YYYY:hh:mm:ss ZZZ")
+    const f = initTimeFormat("d/MMM/YYYY:hh:mm:ss ZZZ")
     let z = local()
     proc parse_line(line: string) =
         var l = Line(str: line, l: line.len)
