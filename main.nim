@@ -132,7 +132,7 @@ proc parse_bytes_sent(this: var Line): string =
 
 # 当前是空格，上一个是-或者数字
 proc parse_upstream_addr(this: var Line): string =
-    return this.parse_item_trim_space(digital_or_none_end)
+    return this.parse_item_trim_space(not_space)
 
 # 当前是空格，上一个是-或者数字
 proc parse_upstream_status(this: var Line): string =

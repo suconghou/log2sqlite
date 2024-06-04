@@ -186,7 +186,7 @@ public:
 
     int parse_upstream_addr(char *item_value)
     {
-        return parse_item_trim_space(item_value, digital_or_none_end);
+        return parse_item_trim_space(item_value, not_space);
     }
 
     int parse_upstream_status(char *item_value)

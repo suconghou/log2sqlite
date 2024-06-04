@@ -180,7 +180,7 @@ int parse_bytes_sent(const char *s, int *offset, const int len, char *item_value
 
 int parse_upstream_addr(const char *s, int *offset, const int len, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_or_none_end);
+    return parse_item_trim_space(s, offset, len, item_value, not_space);
 }
 
 int parse_upstream_status(const char *s, int *offset, const int len, char *item_value)
