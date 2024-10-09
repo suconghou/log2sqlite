@@ -162,7 +162,7 @@ template f(str: string): float =
 template i(str: string): int =
     try:
         if str == "-": 0 else: parseInt(str)
-    except CatchableError:
+    except Exception:
         parseInt(str.split(',')[0])
 
 proc process(filename: File|string) =
@@ -231,7 +231,7 @@ proc process(filename: File|string) =
         try:
             parse_line(line);
             total_lines += 1;
-        except CatchableError:
+        except Exception:
             stderr.writeLine(line)
     # 分析完毕
 
@@ -263,7 +263,7 @@ try:
         process(paramStr(1))
     else:
         process(stdin)
-except CatchableError:
+except Exception:
     echo getCurrentExceptionMsg()
     quit(1)
 
