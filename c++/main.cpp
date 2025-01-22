@@ -5,8 +5,6 @@
 #include <set>
 #include "process.cpp"
 
-using namespace std;
-
 int main(int argc, char *argv[])
 {
     try
@@ -17,11 +15,11 @@ int main(int argc, char *argv[])
         }
         else if (argc < 2)
         {
-            return process(cin);
+            return process(std::cin);
         }
         // ifstream是输入文件流（input file stream）的简称, std::ifstream
         // 离开作用域后，fh文件将被析构器自动关闭
-        ifstream fh(argv[1]); // 打开一个文件
+        std::ifstream fh(argv[1]); // 打开一个文件
         if (!fh)
         {
             // open file failed

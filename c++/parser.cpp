@@ -5,8 +5,6 @@
 #include <iostream>
 #include <set>
 
-using namespace std;
-
 typedef bool (*char_is_match)(unsigned char x, unsigned char y);
 
 // 仅数字

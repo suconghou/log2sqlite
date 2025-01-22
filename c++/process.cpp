@@ -44,7 +44,7 @@ static inline void byteFormat(unsigned long s, char *out)
     snprintf(out, 32, "%.2f %cB", n, *unit);
 }
 
-int process(istream &fh)
+int process(std::istream &fh)
 {
     auto c = dbutil();
     int res = c.begin();
@@ -71,118 +71,118 @@ int process(istream &fh)
         auto a = Line(str);
         if (a.parse_remote_addr(remote_addr) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
 
         if (a.parse_remote_user(remote_user) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
 
         if (a.parse_time_local(value) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
         long time_local = unix_time(value);
 
         if (a.parse_request_line(request_line) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
 
         if (a.parse_status_code(value) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
         int status_code = atoi(value);
 
         if (a.parse_body_bytes_sent(value) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
         int body_bytes_sent = atoi(value);
 
         if (a.parse_http_referer(http_referer) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
 
         if (a.parse_http_user_agent(http_user_agent) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
 
         if (a.parse_http_x_forwarded_for(http_x_forwarded_for) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
 
         if (a.parse_host(host) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
 
         if (a.parse_request_length(value) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
         int request_length = atoi(value);
 
         if (a.parse_bytes_sent(value) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
         int bytes_sent = atoi(value);
 
         if (a.parse_upstream_addr(upstream_addr) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
 
         if (a.parse_upstream_status(value) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
         int upstream_status = atoi(value);
 
         if (a.parse_request_time(value) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
         double request_time = atof(value);
 
         if (a.parse_upstream_response_time(value) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
         double upstream_response_time = atof(value);
 
         if (a.parse_upstream_connect_time(value) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
         double upstream_connect_time = atof(value);
 
         if (a.parse_upstream_header_time(value) < 0)
         {
-            cerr << str << endl;
+            std::cerr << str << std::endl;
             continue;
         }
         double upstream_header_time = atof(value);

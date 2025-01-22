@@ -5,8 +5,6 @@
 #include <sstream>
 #include <iostream>
 
-using namespace std;
-
 #define CHECK(a)        \
     if (a != SQLITE_OK) \
     return a
