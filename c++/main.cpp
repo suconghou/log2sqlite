@@ -30,9 +30,9 @@ int main(int argc, char *argv[])
         fh.rdbuf()->pubsetbuf(buf, sizeof(buf));
         return process(fh);
     }
-    catch (char *e)
+    catch (const std::exception &e)
     {
-        fprintf(stderr, "%s\n", e);
+        std::cerr << e.what() << std::endl;
         return 2;
     }
 }

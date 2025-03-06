@@ -11,7 +11,7 @@
 
 #define CHECKZERO(a) \
     if ((a) != 0)    \
-        throw("error.");
+        throw std::runtime_error("error.");
 
 class dbutil
 {
@@ -26,7 +26,8 @@ public:
     {
         if (sqlite3_open("nginx_log.db", &this->db))
         {
-            throw sqlite3_errmsg(this->db);
+            std::string error_message = std::string(sqlite3_errmsg(this->db));
+            throw std::runtime_error(error_message);
         }
         char *err_msg;
         const char *sql =
@@ -41,14 +42,16 @@ public:
             "CREATE INDEX 'log_time' ON 'nginx_log' ('time');";
         if (sqlite3_exec(this->db, sql, NULL, NULL, &err_msg) != SQLITE_OK)
         {
+            std::string error_message = std::string(err_msg);
             sqlite3_close(this->db);
-            throw err_msg;
+            throw std::runtime_error(error_message);
         }
         sql = "INSERT INTO `nginx_log`(time,remote_addr,remote_user,request,status,body_bytes_sent,http_referer,http_user_agent,http_x_forwarded_for,host,request_length,bytes_sent,upstream_addr,upstream_status,request_time,upstream_response_time,upstream_connect_time,upstream_header_time) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
         if (sqlite3_prepare_v2(this->db, sql, strlen(sql), &stmt_log, NULL) != SQLITE_OK)
         {
+            std::string error_message = std::string(sqlite3_errmsg(this->db));
             sqlite3_close(this->db);
-            throw sqlite3_errmsg(this->db);
+            throw std::runtime_error(error_message);
         }
     }
 
@@ -118,15 +121,19 @@ int sqlite_exec_cb(void *data, int ncols, char **values, char **attribute)
 int db_query(const char *file, const char *sql)
 {
     sqlite3 *db;
-    if (sqlite3_open_v2(file, &db, SQLITE_OPEN_READONLY, NULL))
+    if (sqlite3_open_v2(file, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
     {
-        throw sqlite3_errmsg(db);
+        std::string error_message = std::string(sqlite3_errmsg(db));
+        sqlite3_close_v2(db);
+        throw std::runtime_error(error_message);
     }
     char *err_msg;
     if (sqlite3_exec(db, sql, sqlite_exec_cb, NULL, &err_msg) != SQLITE_OK)
     {
+        std::string error_message = std::string(err_msg);
+        sqlite3_free(err_msg);
         sqlite3_close_v2(db);
-        throw err_msg;
+        throw std::runtime_error(error_message);
     }
     return sqlite3_close_v2(db);
 }
