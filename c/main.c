@@ -42,170 +42,171 @@ int digital_or_none_end(unsigned char x, unsigned char y)
     return !(x == 32 && ((y >= 48 && y <= 57) || y == 45));
 }
 
-// offset 字符串坐标
-int parse_item_trim_space(const char *s, int *offset, const int len, char *item_value, char_is_match cond)
+int parse_item_trim_space(const char *s, const char **pos_ptr, const char *end, char *item_value, char_is_match cond)
 {
-    int i = *offset;
-    while (i < len && s[i] == ' ')
+    const char *pos = *pos_ptr;
+    while (pos < end && *pos == ' ')
     {
-        ++i;
+        ++pos;
     }
-    *offset = i;
-    int found_start = -1;
-    int found_end = -1;
-    unsigned char y = i > 0 ? s[i - 1] : 0;
-    while (i < len)
+    *pos_ptr = pos;
+    const char *found_start = NULL;
+    const char *found_end = NULL;
+    unsigned char y = (pos > s) ? *(pos - 1) : 0;
+    while (pos < end)
     {
-        unsigned char x = s[i++];
+        unsigned char x = *pos++;
         if (cond(x, y))
         {
             y = x;
-            found_end = i - 1;
-            if (found_start < 0)
+            found_end = pos - 1;
+            if (!found_start)
             {
                 found_start = found_end;
             }
-            if (i < len)
+            if (pos < end)
             {
                 continue;
             }
         }
-        if (found_start < 0)
+        if (!found_start)
         {
             return -1;
         }
         // cond成立时,则包含当前字符x，否则不包含，截取的字符最少1字节
         const int v_len = found_end - found_start + 1;
-        memcpy(item_value, s + found_start, v_len);
+        memcpy(item_value, found_start, v_len);
         item_value[v_len] = '\0';
-        while (i < len && s[i] == ' ')
+        while (pos < end && *pos == ' ')
         {
-            ++i;
+            ++pos;
         }
-        *offset = i;
-        return found_start;
+        *pos_ptr = pos;
+        return found_start - s;
     }
-    return found_start;
+    return found_start ? (found_start - s) : -1;
 }
 
-int parse_item_wrap_string(const char *s, int *offset, const int len, char *item_value, const char left, const char right)
+int parse_item_wrap_string(const char *s, const char **pos_ptr, const char *end, char *item_value, const char left, const char right)
 {
-    int i = *offset;
-    while (i < len && s[i] == ' ')
+    const char *pos = *pos_ptr;
+    while (pos < end && *pos == ' ')
     {
-        ++i;
+        ++pos;
     }
-    if (i >= len || s[i] != left)
+    if (pos >= end || *pos != left)
     {
         return -1;
     }
-    ++i;
-    char *p = memchr(s + i, right, len - i);
+    ++pos;
+    const char *p = memchr(pos, right, end - pos);
     if (!p)
     {
         return -1;
     }
-    const int v_len = p - s - i;
-    memcpy(item_value, s + i, v_len);
+    const int v_len = p - pos;
+    memcpy(item_value, pos, v_len);
     item_value[v_len] = '\0';
-    *offset = i + v_len + 1;
+    *pos_ptr = p + 1;
     return 1;
 }
 
-int parse_remote_addr(const char *s, int *offset, const int len, char *item_value)
+int parse_remote_addr(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_dot_colon);
+    return parse_item_trim_space(s, pos_ptr, end, item_value, digital_dot_colon);
 }
 
-int parse_remote_user(const char *s, int *offset, const int len, char *item_value)
+int parse_remote_user(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    int i = *offset;
-    while (i < len && s[i] == '-')
+    const char *pos = *pos_ptr;
+
+    while (pos < end && *pos == '-')
     {
-        ++i;
+        ++pos;
     }
-    *offset = i;
-    return parse_item_trim_space(s, offset, len, item_value, not_space);
+
+    *pos_ptr = pos;
+    return parse_item_trim_space(s, pos_ptr, end, item_value, not_space);
 }
 
-int parse_time_local(const char *s, int *offset, const int len, char *item_value)
+int parse_time_local(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_wrap_string(s, offset, len, item_value, '[', ']');
+    return parse_item_wrap_string(s, pos_ptr, end, item_value, '[', ']');
 }
 
-int parse_request_line(const char *s, int *offset, const int len, char *item_value)
+int parse_request_line(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_wrap_string(s, offset, len, item_value, '"', '"');
+    return parse_item_wrap_string(s, pos_ptr, end, item_value, '"', '"');
 }
 
-int parse_status_code(const char *s, int *offset, const int len, char *item_value)
+int parse_status_code(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital);
+    return parse_item_trim_space(s, pos_ptr, end, item_value, digital);
 }
 
-int parse_body_bytes_sent(const char *s, int *offset, const int len, char *item_value)
+int parse_body_bytes_sent(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital);
+    return parse_item_trim_space(s, pos_ptr, end, item_value, digital);
 }
 
-int parse_http_referer(const char *s, int *offset, const int len, char *item_value)
+int parse_http_referer(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_wrap_string(s, offset, len, item_value, '"', '"');
+    return parse_item_wrap_string(s, pos_ptr, end, item_value, '"', '"');
 }
 
-int parse_http_user_agent(const char *s, int *offset, const int len, char *item_value)
+int parse_http_user_agent(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_wrap_string(s, offset, len, item_value, '"', '"');
+    return parse_item_wrap_string(s, pos_ptr, end, item_value, '"', '"');
 }
 
-int parse_http_x_forwarded_for(const char *s, int *offset, const int len, char *item_value)
+int parse_http_x_forwarded_for(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_wrap_string(s, offset, len, item_value, '"', '"');
+    return parse_item_wrap_string(s, pos_ptr, end, item_value, '"', '"');
 }
 
-int parse_host(const char *s, int *offset, const int len, char *item_value)
+int parse_host(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, not_space);
+    return parse_item_trim_space(s, pos_ptr, end, item_value, not_space);
 }
 
-int parse_request_length(const char *s, int *offset, const int len, char *item_value)
+int parse_request_length(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital);
+    return parse_item_trim_space(s, pos_ptr, end, item_value, digital);
 }
 
-int parse_bytes_sent(const char *s, int *offset, const int len, char *item_value)
+int parse_bytes_sent(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital);
+    return parse_item_trim_space(s, pos_ptr, end, item_value, digital);
 }
 
-int parse_upstream_addr(const char *s, int *offset, const int len, char *item_value)
+int parse_upstream_addr(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, not_space);
+    return parse_item_trim_space(s, pos_ptr, end, item_value, not_space);
 }
 
-int parse_upstream_status(const char *s, int *offset, const int len, char *item_value)
+int parse_upstream_status(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_or_none_end);
+    return parse_item_trim_space(s, pos_ptr, end, item_value, digital_or_none_end);
 }
 
-int parse_request_time(const char *s, int *offset, const int len, char *item_value)
+int parse_request_time(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_dot);
+    return parse_item_trim_space(s, pos_ptr, end, item_value, digital_dot);
 }
 
-int parse_upstream_response_time(const char *s, int *offset, const int len, char *item_value)
+int parse_upstream_response_time(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_dot_minus);
+    return parse_item_trim_space(s, pos_ptr, end, item_value, digital_dot_minus);
 }
 
-int parse_upstream_connect_time(const char *s, int *offset, const int len, char *item_value)
+int parse_upstream_connect_time(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_dot_minus);
+    return parse_item_trim_space(s, pos_ptr, end, item_value, digital_dot_minus);
 }
 
-int parse_upstream_header_time(const char *s, int *offset, const int len, char *item_value)
+int parse_upstream_header_time(const char *s, const char **pos_ptr, const char *end, char *item_value)
 {
-    return parse_item_trim_space(s, offset, len, item_value, digital_dot_minus);
+    return parse_item_trim_space(s, pos_ptr, end, item_value, digital_dot_minus);
 }
 
 static inline void byteFormat(unsigned long s, char *out)
@@ -289,87 +290,87 @@ int main(int argc, char *argv[])
 
     while (fgets(s, sizeof s, input) != NULL)
     {
-        int offset = 0;
-        int len = strlen(s);
+        const char *pos = s;
+        const char *end = s + strlen(s);
 
-        if (parse_remote_addr(s, &offset, len, remote_addr) < 0)
+        if (parse_remote_addr(s, &pos, end, remote_addr) < 0)
         {
             goto error_line;
         }
-        if (parse_remote_user(s, &offset, len, remote_user) < 0)
+        if (parse_remote_user(s, &pos, end, remote_user) < 0)
         {
             goto error_line;
         }
-        if (parse_time_local(s, &offset, len, value) < 0)
+        if (parse_time_local(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
         long time_local = unix_time(value);
-        if (parse_request_line(s, &offset, len, request_line) < 0)
+        if (parse_request_line(s, &pos, end, request_line) < 0)
         {
             goto error_line;
         }
-        if (parse_status_code(s, &offset, len, value) < 0)
+        if (parse_status_code(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
         int status_code = atoi(value);
-        if (parse_body_bytes_sent(s, &offset, len, value) < 0)
+        if (parse_body_bytes_sent(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
         int body_bytes_sent = atoi(value);
-        if (parse_http_referer(s, &offset, len, http_referer) < 0)
+        if (parse_http_referer(s, &pos, end, http_referer) < 0)
         {
             goto error_line;
         }
-        if (parse_http_user_agent(s, &offset, len, http_user_agent) < 0)
+        if (parse_http_user_agent(s, &pos, end, http_user_agent) < 0)
         {
             goto error_line;
         }
-        if (parse_http_x_forwarded_for(s, &offset, len, http_x_forwarded_for) < 0)
+        if (parse_http_x_forwarded_for(s, &pos, end, http_x_forwarded_for) < 0)
         {
             goto error_line;
         }
-        if (parse_host(s, &offset, len, host) < 0)
+        if (parse_host(s, &pos, end, host) < 0)
         {
             goto error_line;
         }
-        if (parse_request_length(s, &offset, len, value) < 0)
+        if (parse_request_length(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
         int request_length = atoi(value);
-        if (parse_bytes_sent(s, &offset, len, value) < 0)
+        if (parse_bytes_sent(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
         int bytes_sent = atoi(value);
-        if (parse_upstream_addr(s, &offset, len, upstream_addr) < 0)
+        if (parse_upstream_addr(s, &pos, end, upstream_addr) < 0)
         {
             goto error_line;
         }
-        if (parse_upstream_status(s, &offset, len, value) < 0)
+        if (parse_upstream_status(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
         int upstream_status = atoi(value);
-        if (parse_request_time(s, &offset, len, value) < 0)
+        if (parse_request_time(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
         double request_time = atof(value);
-        if (parse_upstream_response_time(s, &offset, len, value) < 0)
+        if (parse_upstream_response_time(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
         double upstream_response_time = atof(value);
-        if (parse_upstream_connect_time(s, &offset, len, value) < 0)
+        if (parse_upstream_connect_time(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
         double upstream_connect_time = atof(value);
-        if (parse_upstream_header_time(s, &offset, len, value) < 0)
+        if (parse_upstream_header_time(s, &pos, end, value) < 0)
         {
             goto error_line;
         }

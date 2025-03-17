@@ -46,72 +46,72 @@ bool digital_or_none_end(unsigned char x, unsigned char y)
 class Line
 {
 private:
-    int index;
-    const int len;
-    const char *const str;
+    const char *ptr;       // 当前处理位置的指针
+    const char *const str; // 字符串起始位置
+    const char *const end; // 字符串结束位置的指针
 
     int parse_item_trim_space(char *item_value, const char_is_match cond)
     {
-        while (index < len && str[index] == ' ')
+        while (ptr < end && *ptr == ' ')
         {
-            ++index;
+            ++ptr;
         }
-        int found_start = -1;
-        int found_end = -1;
-        unsigned char y = (index > 0) ? str[index - 1] : 0;
-        while (index < len)
+        const char *found_start = nullptr;
+        const char *found_end = nullptr;
+        unsigned char y = (ptr > str) ? *(ptr - 1) : 0;
+        while (ptr < end)
         {
-            unsigned char x = str[index++];
+            unsigned char x = *ptr++;
             if (cond(x, y))
             {
-                found_end = index - 1;
-                if (found_start < 0)
+                found_end = ptr - 1;
+                if (!found_start)
                 {
                     found_start = found_end;
                 }
-                if (index < len)
+                if (ptr < end)
                 {
                     y = x;
                     continue;
                 }
             }
-            if (found_start < 0)
+            if (!found_start)
             {
                 return -1;
             }
             // cond成立时,则包含当前字符x，否则不包含，截取的字符最少1字节
             const int v_len = found_end - found_start + 1;
-            memcpy(item_value, str + found_start, v_len);
+            memcpy(item_value, found_start, v_len);
             item_value[v_len] = '\0';
-            while (index < len && str[index] == ' ')
+            while (ptr < end && *ptr == ' ')
             {
-                ++index;
+                ++ptr;
             }
-            return found_start;
+            return found_start - str;
         }
-        return found_start;
+        return found_start ? (found_start - str) : -1;
     }
 
     int parse_item_wrap_string(char *item_value, const char &left = '"', const char &right = '"')
     {
-        while (index < len && str[index] == ' ')
+        while (ptr < end && *ptr == ' ')
         {
-            ++index;
+            ++ptr;
         }
-        if (index >= len || str[index] != left)
+        if (ptr >= end || *ptr != left)
         {
             return -1;
         }
-        ++index;
-        auto p = memchr(str + index, right, len - index);
+        ++ptr;
+        const char *p = static_cast<const char *>(memchr(ptr, right, end - ptr));
         if (!p)
         {
             return -1;
         }
-        const int v_len = static_cast<const char *>(p) - str - index;
-        memcpy(item_value, str + index, v_len);
+        const int v_len = p - ptr;
+        memcpy(item_value, ptr, v_len);
         item_value[v_len] = '\0';
-        index += v_len + 1;
+        ptr = p + 1;
         return 1;
     }
 
@@ -125,9 +125,9 @@ public:
 
     int parse_remote_user(char *item_value)
     {
-        while (index < len && str[index] == '-')
+        while (ptr < end && *ptr == '-')
         {
-            ++index;
+            ++ptr;
         }
         return parse_item_trim_space(item_value, not_space);
     }
@@ -213,7 +213,6 @@ public:
     }
 };
 
-Line::Line(const char *const line) : len(strlen(line)), str(line)
+Line::Line(const char *const line) : ptr(line), str(line), end(line + strlen(line))
 {
-    index = 0;
 }
