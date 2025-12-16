@@ -5,8 +5,6 @@
 #include <iostream>
 #include <set>
 
-typedef bool (*char_is_match)(unsigned char x, unsigned char y);
-
 // 仅数字
 bool digital(unsigned char x, unsigned char y)
 {
@@ -50,7 +48,8 @@ private:
     const char *const str; // 字符串起始位置
     const char *const end; // 字符串结束位置的指针
 
-    int parse_item_trim_space(char *item_value, const char_is_match cond)
+    template <auto cond>
+    int parse_item_trim_space(char *item_value)
     {
         while (ptr < end && *ptr == ' ')
         {
@@ -120,7 +119,7 @@ public:
 
     int parse_remote_addr(char *item_value)
     {
-        return parse_item_trim_space(item_value, digital_dot_colon);
+        return parse_item_trim_space<digital_dot_colon>(item_value);
     }
 
     int parse_remote_user(char *item_value)
@@ -129,7 +128,7 @@ public:
         {
             ++ptr;
         }
-        return parse_item_trim_space(item_value, not_space);
+        return parse_item_trim_space<not_space>(item_value);
     }
 
     int parse_time_local(char *item_value)
@@ -144,12 +143,12 @@ public:
 
     int parse_status_code(char *item_value)
     {
-        return parse_item_trim_space(item_value, digital);
+        return parse_item_trim_space<digital>(item_value);
     }
 
     int parse_body_bytes_sent(char *item_value)
     {
-        return parse_item_trim_space(item_value, digital);
+        return parse_item_trim_space<digital>(item_value);
     }
 
     int parse_http_referer(char *item_value)
@@ -169,47 +168,47 @@ public:
 
     int parse_host(char *item_value)
     {
-        return parse_item_trim_space(item_value, not_space);
+        return parse_item_trim_space<not_space>(item_value);
     }
 
     int parse_request_length(char *item_value)
     {
-        return parse_item_trim_space(item_value, digital);
+        return parse_item_trim_space<digital>(item_value);
     }
 
     int parse_bytes_sent(char *item_value)
     {
-        return parse_item_trim_space(item_value, digital);
+        return parse_item_trim_space<digital>(item_value);
     }
 
     int parse_upstream_addr(char *item_value)
     {
-        return parse_item_trim_space(item_value, not_space);
+        return parse_item_trim_space<not_space>(item_value);
     }
 
     int parse_upstream_status(char *item_value)
     {
-        return parse_item_trim_space(item_value, digital_or_none_end);
+        return parse_item_trim_space<digital_or_none_end>(item_value);
     }
 
     int parse_request_time(char *item_value)
     {
-        return parse_item_trim_space(item_value, digital_dot);
+        return parse_item_trim_space<digital_dot>(item_value);
     }
 
     int parse_upstream_response_time(char *item_value)
     {
-        return parse_item_trim_space(item_value, digital_dot_minus);
+        return parse_item_trim_space<digital_dot_minus>(item_value);
     }
 
     int parse_upstream_connect_time(char *item_value)
     {
-        return parse_item_trim_space(item_value, digital_dot_minus);
+        return parse_item_trim_space<digital_dot_minus>(item_value);
     }
 
     int parse_upstream_header_time(char *item_value)
     {
-        return parse_item_trim_space(item_value, digital_dot_minus);
+        return parse_item_trim_space<digital_dot_minus>(item_value);
     }
 };
 
