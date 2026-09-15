@@ -15,19 +15,15 @@ int main(int argc, char *argv[])
         }
         else if (argc < 2)
         {
-            return process(std::cin);
+            return process(stdin);
         }
-        // ifstream是输入文件流（input file stream）的简称, std::ifstream
-        // 离开作用域后，fh文件将被析构器自动关闭
-        std::ifstream fh(argv[1]); // 打开一个文件
+        FILE *fh = fopen(argv[1], "r");
         if (!fh)
         {
             // open file failed
             perror(argv[1]);
             return 1;
         }
-        char buf[81920];
-        fh.rdbuf()->pubsetbuf(buf, sizeof(buf));
         return process(fh);
     }
     catch (const std::exception &e)

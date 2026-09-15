@@ -25,6 +25,41 @@ long unix_time(const char *timestr)
     return x;
 }
 
+static inline int sv_to_int(const char *str)
+{
+    int result = 0;
+    while (*str >= '0' && *str <= '9')
+    {
+        result = result * 10 + (*str - '0');
+        str++;
+    }
+    return result;
+}
+
+static inline double sv_to_double(const char *str)
+{
+    long long int_part = 0;
+    while (*str >= '0' && *str <= '9')
+    {
+        int_part = int_part * 10 + (*str - '0');
+        str++;
+    }
+    if (*str == '.')
+    {
+        str++;
+        long long frac = 0;
+        long long scale = 1;
+        while (*str >= '0' && *str <= '9' && scale < 1000000000000LL)
+        {
+            frac = frac * 10 + (*str - '0');
+            scale *= 10;
+            str++;
+        }
+        return (double)int_part + (double)frac / (double)scale;
+    }
+    return (double)int_part;
+}
+
 // out 空间至少有32字节
 static inline void byteFormat(unsigned long s, char *out)
 {
@@ -44,7 +79,7 @@ static inline void byteFormat(unsigned long s, char *out)
     snprintf(out, 32, "%.2f %cB", n, *unit);
 }
 
-int process(std::istream &fh)
+int process(FILE *fh)
 {
     auto c = dbutil();
     int res = c.begin();
@@ -66,7 +101,7 @@ int process(std::istream &fh)
 
     char value[1024] = {0}; // 后面多处使用此内存池复用
 
-    while (fh.getline(str, sizeof(str)))
+    while (fgets(str, sizeof(str), fh))
     {
         auto a = Line(str);
         if (a.parse_remote_addr(remote_addr) < 0)
@@ -99,14 +134,14 @@ int process(std::istream &fh)
             std::cerr << str << std::endl;
             continue;
         }
-        int status_code = atoi(value);
+        int status_code = sv_to_int(value);
 
         if (a.parse_body_bytes_sent(value) < 0)
         {
             std::cerr << str << std::endl;
             continue;
         }
-        int body_bytes_sent = atoi(value);
+        int body_bytes_sent = sv_to_int(value);
 
         if (a.parse_http_referer(http_referer) < 0)
         {
@@ -137,14 +172,14 @@ int process(std::istream &fh)
             std::cerr << str << std::endl;
             continue;
         }
-        int request_length = atoi(value);
+        int request_length = sv_to_int(value);
 
         if (a.parse_bytes_sent(value) < 0)
         {
             std::cerr << str << std::endl;
             continue;
         }
-        int bytes_sent = atoi(value);
+        int bytes_sent = sv_to_int(value);
 
         if (a.parse_upstream_addr(upstream_addr) < 0)
         {
@@ -157,35 +192,35 @@ int process(std::istream &fh)
             std::cerr << str << std::endl;
             continue;
         }
-        int upstream_status = atoi(value);
+        int upstream_status = sv_to_int(value);
 
         if (a.parse_request_time(value) < 0)
         {
             std::cerr << str << std::endl;
             continue;
         }
-        double request_time = atof(value);
+        double request_time = sv_to_double(value);
 
         if (a.parse_upstream_response_time(value) < 0)
         {
             std::cerr << str << std::endl;
             continue;
         }
-        double upstream_response_time = atof(value);
+        double upstream_response_time = sv_to_double(value);
 
         if (a.parse_upstream_connect_time(value) < 0)
         {
             std::cerr << str << std::endl;
             continue;
         }
-        double upstream_connect_time = atof(value);
+        double upstream_connect_time = sv_to_double(value);
 
         if (a.parse_upstream_header_time(value) < 0)
         {
             std::cerr << str << std::endl;
             continue;
         }
-        double upstream_header_time = atof(value);
+        double upstream_header_time = sv_to_double(value);
 
         // 这一行 所有都已正确解析
         total_lines++;

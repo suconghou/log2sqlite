@@ -209,6 +209,41 @@ int parse_upstream_header_time(const char *s, const char **pos_ptr, const char *
     return parse_item_trim_space(s, pos_ptr, end, item_value, digital_dot_minus);
 }
 
+static inline int sv_to_int(const char *str)
+{
+    int result = 0;
+    while (*str >= '0' && *str <= '9')
+    {
+        result = result * 10 + (*str - '0');
+        str++;
+    }
+    return result;
+}
+
+static inline double sv_to_double(const char *str)
+{
+    long long int_part = 0;
+    while (*str >= '0' && *str <= '9')
+    {
+        int_part = int_part * 10 + (*str - '0');
+        str++;
+    }
+    if (*str == '.')
+    {
+        str++;
+        long long frac = 0;
+        long long scale = 1;
+        while (*str >= '0' && *str <= '9' && scale < 1000000000000LL)
+        {
+            frac = frac * 10 + (*str - '0');
+            scale *= 10;
+            str++;
+        }
+        return (double)int_part + (double)frac / (double)scale;
+    }
+    return (double)int_part;
+}
+
 static inline void byteFormat(unsigned long s, char *out)
 {
     char *unit = "KMGTPEZY";
@@ -314,12 +349,12 @@ int main(int argc, char *argv[])
         {
             goto error_line;
         }
-        int status_code = atoi(value);
+        int status_code = sv_to_int(value);
         if (parse_body_bytes_sent(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
-        int body_bytes_sent = atoi(value);
+        int body_bytes_sent = sv_to_int(value);
         if (parse_http_referer(s, &pos, end, http_referer) < 0)
         {
             goto error_line;
@@ -340,12 +375,12 @@ int main(int argc, char *argv[])
         {
             goto error_line;
         }
-        int request_length = atoi(value);
+        int request_length = sv_to_int(value);
         if (parse_bytes_sent(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
-        int bytes_sent = atoi(value);
+        int bytes_sent = sv_to_int(value);
         if (parse_upstream_addr(s, &pos, end, upstream_addr) < 0)
         {
             goto error_line;
@@ -354,27 +389,27 @@ int main(int argc, char *argv[])
         {
             goto error_line;
         }
-        int upstream_status = atoi(value);
+        int upstream_status = sv_to_int(value);
         if (parse_request_time(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
-        double request_time = atof(value);
+        double request_time = sv_to_double(value);
         if (parse_upstream_response_time(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
-        double upstream_response_time = atof(value);
+        double upstream_response_time = sv_to_double(value);
         if (parse_upstream_connect_time(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
-        double upstream_connect_time = atof(value);
+        double upstream_connect_time = sv_to_double(value);
         if (parse_upstream_header_time(s, &pos, end, value) < 0)
         {
             goto error_line;
         }
-        double upstream_header_time = atof(value);
+        double upstream_header_time = sv_to_double(value);
 
         // 这一行 所有都已正确解析，插入table中
         total_lines++;
