@@ -20,8 +20,10 @@ parse nginx access log into sqlite database
 
 ## nim 版本
 
+Nim 2.4 起 `db_sqlite`/`sqlite3` 已从标准库移出，需先 `nimble install db_connector`
+
 ```
-nim --mm:arc -d:release --dynlibOverride:libsqlite3 --passC:-flto --passL:-flto --passL:-s --passL:-static --passL:-lsqlite3 --opt:speed c main
+nim c --path:$(nimble path db_connector)/db_connector --mm:arc -d:release --boundChecks:off --overflowChecks:off --rangeChecks:off --dynlibOverride:libsqlite3 --passC:-flto --passL:-flto --passL:-s --passL:-static --passL:-lsqlite3 --opt:speed main
 ```
 
 

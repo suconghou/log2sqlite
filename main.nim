@@ -1,6 +1,6 @@
 
 
-import os, tables, sets, strformat, strutils, sqlite3, db_sqlite, times
+import os, strformat, strutils, db_sqlite, times
 
 
 type Line = object
@@ -9,16 +9,16 @@ type Line = object
     l: int
 
 
-# 类似内置substr的更快实现
+# 类似内置substr的更快实现，免去内置的边界裁剪与内存清零
 func substr(s: string, first: int, last: int): string =
     let l = last-first+1
     if l < 1:
         return ""
-    result = newString(l)
+    result = newStringUninit(l)
     copyMem(result[0].addr, cast[cstring](cast[uint](s.cstring)+first.uint), l)
 
 # 根据条件匹配直至不满足条件，舍去前后空格
-proc parse_item_trim_space(this: var Line, cond: proc): string =
+proc parse_item_trim_space(this: var Line, cond: proc(x, y: char): bool {.nimcall.}): string =
     while this.index < this.l and this.str[this.index] == ' ':
         this.index+=1
     var i = this.index;
@@ -159,11 +159,15 @@ proc parse_upstream_header_time(this: var Line): string =
 template f(str: string): float =
     if str == "-": 0.float else: parseFloat(str)
 
+# 同c++的sv_to_int，取前导数字，遇到非数字停止，无数字则为0
 template i(str: string): int =
-    try:
-        if str == "-": 0 else: parseInt(str)
-    except Exception:
-        parseInt(str.split(',')[0])
+    block:
+        var n = 0
+        for c in str:
+            if c < '\48' or c > '\57':
+                break
+            n = n*10 + ord(c) - 48
+        n
 
 proc process(filename: File|string) =
 
@@ -172,6 +176,7 @@ proc process(filename: File|string) =
     var total_lines: uint = 0;
 
     let db = open("nginx_log.db", "", "", "")
+    defer: db.close()
 
     db.exec(sql"PRAGMA JOURNAL_MODE=MEMORY")
     db.exec(sql"PRAGMA LOCKING_MODE=EXCLUSIVE")
@@ -186,6 +191,7 @@ proc process(filename: File|string) =
 
     db.exec(sql"BEGIN;")
     let insertStmt = db.prepare("INSERT INTO `nginx_log`(time,remote_addr,remote_user,request,status,body_bytes_sent,http_referer,http_user_agent,http_x_forwarded_for,host,request_length,bytes_sent,upstream_addr,upstream_status,request_time,upstream_response_time,upstream_connect_time,upstream_header_time) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);")
+    defer: insertStmt.finalize()
 
 
     var ctime = ("", 0.int64)
@@ -243,17 +249,10 @@ proc process(filename: File|string) =
 proc query(file: string, str: string) =
     if not file.fileExists:
         raise newException(DbError, "文件不存在:"&file)
-    var line = ""
-    var i = 0
-    for row in open(file, "", "", "").fastRows(str.sql):
-        i = 0
-        line.setLen(0)
-        for x in row:
-            if i > 0:
-                line.add('|')
-            line.add(x)
-            inc(i)
-        echo line
+    let db = open(file, "", "", "")
+    defer: db.close()
+    for row in db.fastRows(str.sql):
+        echo row.join("|")
 
 try:
     let argc = paramCount()
@@ -264,7 +263,7 @@ try:
     else:
         process(stdin)
 except Exception:
-    echo getCurrentExceptionMsg()
+    stderr.writeLine(getCurrentExceptionMsg())
     quit(1)
 
 
